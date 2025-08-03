@@ -1,0 +1,44 @@
+{
+  "name": "attendance-dashboard",
+  "version": "1.0.0",
+  "description": "Employee Attendance Management System",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm start",
+    "build": "cd frontend && npm run build",
+    "start": "cd backend && npm start",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "setup": "npm run setup:backend && npm run setup:frontend",
+    "setup:backend": "cd backend && npm install",
+    "setup:frontend": "cd frontend && npm install",
+    "pm2:start": "./pm2-manager.sh start",
+    "pm2:start-prod": "./pm2-manager.sh start-prod",
+    "pm2:stop": "./pm2-manager.sh stop",
+    "pm2:restart": "./pm2-manager.sh restart",
+    "pm2:reload": "./pm2-manager.sh reload",
+    "pm2:status": "./pm2-manager.sh status",
+    "pm2:logs": "./pm2-manager.sh logs",
+    "pm2:monitor": "./pm2-manager.sh monitor",
+    "pm2:health": "./pm2-manager.sh health"
+  },
+  "keywords": [
+    "attendance",
+    "management",
+    "employee",
+    "dashboard"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "node-fetch": "^3.3.2",
+    "pg": "^8.16.3"
+  }
+}

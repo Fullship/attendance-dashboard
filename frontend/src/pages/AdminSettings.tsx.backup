@@ -1,0 +1,460 @@
+import React, { useState, useCallback } from 'react';
+import usePagination from '../hooks/usePagination';
+import PaginationControls, {
+  PaginationLoading,
+  PaginationError,
+  PaginationEmpty,
+} from '../components/PaginationControls';
+
+// Ensure this file is treated as a module
+export {};
+
+interface Setting {
+  id: string;
+  setting_name: string;
+  setting_value: string;
+  description: string;
+  setting_type: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface Holiday {
+  id: number;
+  name: string;
+  date: string;
+  is_recurring: boolean;
+  location_id?: number;
+  created_at: string;
+}
+
+interface WorkSchedule {
+  id: number;
+  name: string;
+  description: string;
+  is_default: boolean;
+  working_days: number[];
+  start_time: string;
+  end_time: string;
+  created_at: string;
+}
+
+interface SettingsData {
+  settings: {
+    data: Setting[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      pages: number;
+    };
+  };
+  holidays: {
+    data: Holiday[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      pages: number;
+    };
+  };
+  workSchedules: {
+    data: WorkSchedule[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      pages: number;
+    };
+  };
+}
+
+const AdminSettings: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<'settings' | 'holidays' | 'schedules'>('settings');
+  const [search, setSearch] = useState('');
+  const [holidayYear, setHolidayYear] = useState<number>(new Date().getFullYear());
+
+  // Pagination hook for settings
+  const {
+    data,
+    pagination,
+    loading,
+    error,
+    goToPage,
+    changeLimit,
+    updateParams,
+    refresh,
+    getPageInfo,
+    getPageNumbers,
+  } = usePagination<SettingsData>(
+    '/api/admin/settings',
+    {
+      search,
+      holidayYear: holidayYear.toString(),
+      settingsPage: 1,
+      settingsLimit: 20,
+      holidaysPage: 1,
+      holidaysLimit: 20,
+      schedulesPage: 1,
+      schedulesLimit: 20,
+    }
+  );
+
+  // Get current tab data
+  const getCurrentTabData = useCallback(() => {
+    if (!data || typeof data !== 'object') return [];
+    
+    switch (activeTab) {
+      case 'settings':
+        return data.settings?.data || [];
+      case 'holidays':
+        return data.holidays?.data || [];
+      case 'schedules':
+        return data.workSchedules?.data || [];
+      default:
+        return [];
+    }
+  }, [data, activeTab]);
+
+  // Get pagination data for current tab
+  const getCurrentPagination = useCallback(() => {
+    if (!data || typeof data !== 'object' || !('settings' in data)) {
+      return { page: 1, limit: 20, total: 0, pages: 0 };
+    }
+
+    const settingsData = data as SettingsData;
+    switch (activeTab) {
+      case 'settings':
+        return settingsData.settings?.pagination || { page: 1, limit: 20, total: 0, pages: 0 };
+      case 'holidays':
+        return settingsData.holidays?.pagination || { page: 1, limit: 20, total: 0, pages: 0 };
+      case 'schedules':
+        return settingsData.workSchedules?.pagination || { page: 1, limit: 20, total: 0, pages: 0 };
+      default:
+        return { page: 1, limit: 20, total: 0, pages: 0 };
+    }
+  }, [data, activeTab]);
+
+  const currentPagination = getCurrentPagination();
+
+  // Handle search
+  const handleSearch = useCallback(
+    (newSearch: string) => {
+      setSearch(newSearch);
+      updateParams({ search: newSearch });
+    },
+    [updateParams]
+  );
+
+  // Handle holiday year change
+  const handleYearChange = useCallback(
+    (year: number) => {
+      setHolidayYear(year);
+      updateParams({ holidayYear: year.toString() });
+    },
+    [updateParams]
+  );
+
+  // Handle pagination for specific tab
+  const handlePageChange = useCallback(
+    (page: number) => {
+      const params: Record<string, string> = {};
+
+      switch (activeTab) {
+        case 'settings':
+          params.settingsPage = page.toString();
+          break;
+        case 'holidays':
+          params.holidaysPage = page.toString();
+          break;
+        case 'schedules':
+          params.schedulesPage = page.toString();
+          break;
+      }
+
+      updateParams(params);
+    },
+    [activeTab, updateParams]
+  );
+
+  const handleLimitChange = useCallback(
+    (limit: number) => {
+      const params: Record<string, string> = {};
+
+      switch (activeTab) {
+        case 'settings':
+          params.settingsLimit = limit.toString();
+          params.settingsPage = '1';
+          break;
+        case 'holidays':
+          params.holidaysLimit = limit.toString();
+          params.holidaysPage = '1';
+          break;
+        case 'schedules':
+          params.schedulesLimit = limit.toString();
+          params.schedulesPage = '1';
+          break;
+      }
+
+      updateParams(params);
+    },
+    [activeTab, updateParams]
+  );
+
+  // Tab configuration
+  const tabs = [
+    { key: 'settings', label: 'Settings', icon: '⚙️' },
+    { key: 'holidays', label: 'Holidays', icon: '🗓️' },
+    { key: 'schedules', label: 'Work Schedules', icon: '📅' },
+  ] as const;
+
+  const renderSettings = () => {
+    const settings = data?.settings?.data || [];
+    return (
+      <div className="space-y-4">
+        {settings.map((setting: Setting) => (
+          <div key={setting.setting_name} className="bg-white p-4 rounded-lg border">
+            <div className="flex justify-between items-start">
+              <div className="flex-1">
+                <h3 className="text-lg font-medium text-gray-900">{setting.setting_name}</h3>
+                <p className="text-sm text-gray-600 mt-1">{setting.description}</p>
+                <div className="mt-2">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    {setting.setting_type}
+                  </span>
+                </div>
+              </div>
+                              </div>
+              </div>
+              <div className="ml-4 text-right">
+                <div className="text-lg font-medium text-gray-900">{setting.setting_value}</div>
+                <div className="text-xs text-gray-500">
+                  Updated: {new Date(setting.updated_at).toLocaleDateString()}
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  const renderHolidays = () => {
+    const holidays = data?.holidays?.data || [];
+    return (
+      <div className="space-y-4">
+        {holidays.map((holiday: Holiday) => (
+            </div>
+          </div>
+        ))}
+    </div>
+  );
+
+  const renderHolidays = () => (
+    <div className="space-y-4">
+      <div className="mb-4 flex items-center space-x-4">
+        <label htmlFor="holidayYear" className="text-sm font-medium text-gray-700">
+          Year:
+        </label>
+        <select
+          id="holidayYear"
+          value={holidayYear}
+          onChange={e => handleYearChange(parseInt(e.target.value))}
+          className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i).map(year => (
+            <option key={year} value={year}>
+              {year}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {Array.isArray(data) &&
+        data.map((holiday: Holiday) => (
+          <div key={holiday.id} className="bg-white p-4 rounded-lg border">
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="text-lg font-medium text-gray-900">{holiday.name}</h3>
+                <p className="text-sm text-gray-600">
+                  {new Date(holiday.date).toLocaleDateString()}
+                </p>
+              </div>
+              <div className="flex items-center space-x-2">
+                {holiday.is_recurring && (
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    Recurring
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+    </div>
+  );
+
+  const renderWorkSchedules = () => (
+    <div className="space-y-4">
+      {Array.isArray(data) &&
+        data.map((schedule: WorkSchedule) => (
+          <div key={schedule.id} className="bg-white p-4 rounded-lg border">
+            <div className="flex justify-between items-start">
+              <div className="flex-1">
+                <div className="flex items-center space-x-2">
+                  <h3 className="text-lg font-medium text-gray-900">{schedule.name}</h3>
+                  {schedule.is_default && (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      Default
+                    </span>
+                  )}
+                </div>
+                <p className="text-sm text-gray-600 mt-1">{schedule.description}</p>
+                <div className="mt-2 text-sm text-gray-500">
+                  {schedule.start_time} - {schedule.end_time}
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+    </div>
+  );
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'settings':
+        return renderSettings();
+      case 'holidays':
+        return renderHolidays();
+      case 'schedules':
+        return renderWorkSchedules();
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="max-w-6xl mx-auto px-4 py-6">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">System Settings</h1>
+        <p className="text-gray-600 mt-1">
+          Manage attendance settings, holidays, and work schedules
+        </p>
+      </div>
+
+      {/* Tab Navigation */}
+      <div className="border-b border-gray-200 mb-6">
+        <nav className="-mb-px flex space-x-8">
+          {tabs.map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
+                activeTab === tab.key
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <span className="mr-2">{tab.icon}</span>
+              {tab.label}
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      {/* Search Bar */}
+      {(activeTab === 'settings' || activeTab === 'schedules') && (
+        <div className="mb-6">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder={`Search ${activeTab}...`}
+              value={search}
+              onChange={e => handleSearch(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+            <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+              <svg
+                className="h-5 w-5 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Error State */}
+      <PaginationError error={error} onRetry={refresh} className="mb-6" />
+
+      {/* Content */}
+      <PaginationLoading loading={loading}>
+        {Array.isArray(data) && data.length === 0 ? (
+          <PaginationEmpty
+            message={`No ${activeTab} found`}
+            description={
+              search
+                ? `Try adjusting your search criteria`
+                : `No ${activeTab} have been configured yet`
+            }
+          />
+        ) : (
+          renderContent()
+        )}
+      </PaginationLoading>
+
+      {/* Pagination Controls */}
+      {Array.isArray(data) && data.length > 0 && (
+        <div className="mt-6 border-t pt-6">
+          <PaginationControls
+            pagination={currentPagination}
+            loading={loading}
+            onPageChange={handlePageChange}
+            onLimitChange={handleLimitChange}
+            getPageInfo={() => ({
+              start: Math.max(1, (currentPagination.page - 1) * currentPagination.limit + 1),
+              end: Math.min(
+                currentPagination.page * currentPagination.limit,
+                currentPagination.total
+              ),
+              total: currentPagination.total,
+              hasNext: currentPagination.page < currentPagination.pages,
+              hasPrev: currentPagination.page > 1,
+              isFirst: currentPagination.page === 1,
+              isLast: currentPagination.page === currentPagination.pages,
+            })}
+            getPageNumbers={(maxVisible = 5) => {
+              const { page, pages } = currentPagination;
+              const numbers = [];
+
+              if (pages <= maxVisible) {
+                for (let i = 1; i <= pages; i++) {
+                  numbers.push(i);
+                }
+              } else {
+                const start = Math.max(1, page - Math.floor(maxVisible / 2));
+                const end = Math.min(pages, start + maxVisible - 1);
+                const adjustedStart = Math.max(1, end - maxVisible + 1);
+
+                for (let i = adjustedStart; i <= end; i++) {
+                  numbers.push(i);
+                }
+              }
+
+              return numbers;
+            }}
+          />
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default AdminSettings;

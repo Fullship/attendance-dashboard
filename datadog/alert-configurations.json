@@ -1,0 +1,239 @@
+{
+  "alerts": [
+    {
+      "name": "🚨 High API Latency (95p > 500ms)",
+      "type": "metric alert",
+      "query": "avg(last_5m):avg:trace.express.request.duration.by.service.95p{service:attendance-dashboard-backend} > 500",
+      "message": "**CRITICAL: High API Latency Detected** \n\nThe 95th percentile API latency has exceeded 500ms for the past 5 minutes.\n\n**Current Value:** {{value}}ms\n**Threshold:** 500ms\n**Service:** {{service.name}}\n**Environment:** {{env.name}}\n\n**Impact:** Users are experiencing slow response times which may affect application usability.\n\n**Immediate Actions:**\n- Check current server load and CPU usage\n- Review slow database queries\n- Verify if any batch operations are running\n- Check for memory leaks or garbage collection issues\n\n**Dashboard:** [Performance Dashboard](https://app.datadoghq.com/dashboard/abc-123)\n**Runbook:** [High Latency Troubleshooting](https://wiki.company.com/runbooks/high-latency)\n\n@slack-alerts @pagerduty-high-priority",
+      "tags": ["service:attendance-dashboard-backend", "alert-type:performance", "severity:high"],
+      "options": {
+        "thresholds": {
+          "critical": 500,
+          "warning": 300
+        },
+        "notify_audit": false,
+        "notify_no_data": true,
+        "no_data_timeframe": 10,
+        "require_full_window": false,
+        "new_host_delay": 300,
+        "evaluation_delay": 60,
+        "renotify_interval": 60,
+        "escalation_message": "🔥 **ESCALATION**: API latency issue persists after 1 hour. \n\n**Actions Taken:** Please update this alert with current status.\n**Next Steps:** Consider scaling infrastructure or implementing emergency measures.\n\n@manager-on-call @infrastructure-team"
+      }
+    },
+    {
+      "name": "⏱️ Poor TTFB Performance (95p > 800ms)",
+      "type": "metric alert",
+      "query": "avg(last_10m):avg:rum.loading_time.first_byte.95p{application_id:*} > 800",
+      "message": "**WARNING: Poor Time to First Byte Performance**\n\nFrontend TTFB 95th percentile has exceeded 800ms, indicating potential backend or network issues.\n\n**Current Value:** {{value}}ms\n**Threshold:** 800ms\n**Environment:** {{env.name}}\n\n**User Impact:** Users experiencing slow page loads and poor perceived performance.\n\n**Investigation Steps:**\n- Check backend API latency metrics\n- Verify CDN and edge cache performance\n- Review server response times\n- Check for network connectivity issues\n\n**Related Metrics:** Also monitor API latency and server response times.\n\n@web-performance-team @frontend-alerts",
+      "tags": ["service:attendance-dashboard-frontend", "alert-type:frontend", "severity:medium"],
+      "options": {
+        "thresholds": {
+          "critical": 800,
+          "warning": 500
+        },
+        "notify_audit": false,
+        "notify_no_data": true,
+        "no_data_timeframe": 20,
+        "require_full_window": false,
+        "evaluation_delay": 60,
+        "renotify_interval": 120
+      }
+    },
+    {
+      "name": "💾 High Memory Usage (>256MB)",
+      "type": "metric alert",
+      "query": "avg(last_10m):avg:process.memory.rss{service:attendance-dashboard-backend} > 268435456",
+      "message": "**CRITICAL: High Memory Usage Alert**\n\nApplication memory usage has exceeded 256MB threshold.\n\n**Current Usage:** {{value}} bytes ({{value|float|filesizeformat}})\n**Threshold:** 256MB\n**Service:** {{service.name}}\n**Host:** {{host.name}}\n\n**Potential Issues:**\n- Memory leaks in application code\n- Large data sets being processed\n- Inefficient caching strategies\n- Node.js garbage collection issues\n\n**Immediate Actions:**\n1. Check for memory leaks using heap dumps\n2. Review recent deployments for memory-intensive changes\n3. Monitor garbage collection metrics\n4. Consider restarting affected processes if memory continues to grow\n\n**Memory Analysis Commands:**\n```bash\n# Generate heap dump\nkill -USR2 <process_id>\n\n# Check PM2 memory usage\npm2 monit\n\n# Analyze heap\nnode --inspect-brk=0.0.0.0:9229 your-app.js\n```\n\n@infrastructure-team @backend-alerts @pagerduty-medium-priority",
+      "tags": [
+        "service:attendance-dashboard-backend",
+        "alert-type:infrastructure",
+        "severity:high"
+      ],
+      "options": {
+        "thresholds": {
+          "critical": 268435456,
+          "warning": 134217728
+        },
+        "notify_audit": false,
+        "notify_no_data": true,
+        "no_data_timeframe": 15,
+        "require_full_window": false,
+        "evaluation_delay": 60,
+        "renotify_interval": 30
+      }
+    },
+    {
+      "name": "❌ High Error Rate (>5%)",
+      "type": "metric alert",
+      "query": "avg(last_10m):(sum:trace.express.request.errors{service:attendance-dashboard-backend}.as_rate() / sum:trace.express.request.hits{service:attendance-dashboard-backend}.as_rate()) * 100 > 5",
+      "message": "**ALERT: High Error Rate Detected**\n\nApplication error rate has exceeded 5% threshold.\n\n**Current Error Rate:** {{value}}%\n**Threshold:** 5%\n**Service:** {{service.name}}\n**Environment:** {{env.name}}\n\n**Error Impact:** Users are experiencing failures when using the application.\n\n**Troubleshooting Steps:**\n1. Check recent error logs for patterns\n2. Review recent deployments for breaking changes\n3. Verify database connectivity and health\n4. Check external service dependencies\n5. Monitor specific error types and endpoints\n\n**Quick Investigation Queries:**\n```\n# Top error endpoints\ntrace.express.request.errors{service:attendance-dashboard-backend} by {resource}\n\n# Error types breakdown  \nlogs{service:attendance-dashboard-backend,status:error} by {error.kind}\n```\n\n**Next Steps:**\n- If errors are related to specific endpoints, consider feature toggles\n- If database related, check connection pools and query performance\n- If external service related, implement circuit breakers\n\n@backend-team @on-call-engineer @slack-critical",
+      "tags": ["service:attendance-dashboard-backend", "alert-type:errors", "severity:high"],
+      "options": {
+        "thresholds": {
+          "critical": 5,
+          "warning": 2
+        },
+        "notify_audit": false,
+        "notify_no_data": false,
+        "require_full_window": false,
+        "evaluation_delay": 60,
+        "renotify_interval": 45
+      }
+    },
+    {
+      "name": "🗄️ Slow Database Queries (95p > 200ms)",
+      "type": "metric alert",
+      "query": "avg(last_15m):avg:trace.postgres.query.duration.by.service.95p{service:attendance-dashboard-backend} > 200",
+      "message": "**WARNING: Slow Database Query Performance**\n\nDatabase query 95th percentile latency has exceeded 200ms.\n\n**Current Value:** {{value}}ms\n**Threshold:** 200ms\n**Service:** {{service.name}}\n**Database:** PostgreSQL\n\n**Performance Impact:** Slow database queries are affecting overall application response times.\n\n**Investigation Actions:**\n1. **Identify Slow Queries:**\n   - Check PostgreSQL slow query log\n   - Use `EXPLAIN ANALYZE` on suspected queries\n   - Review query execution plans\n\n2. **Database Health Check:**\n   - Monitor connection pool utilization\n   - Check for lock contention\n   - Review index usage and effectiveness\n   - Verify disk I/O performance\n\n3. **Optimization Steps:**\n   - Add missing indexes for frequent queries\n   - Optimize JOIN operations\n   - Consider query result caching\n   - Review data model for normalization issues\n\n**Useful Queries:**\n```sql\n-- Find slow queries\nSELECT query, mean_exec_time, calls \nFROM pg_stat_statements \nORDER BY mean_exec_time DESC LIMIT 10;\n\n-- Check index usage\nSELECT schemaname,tablename,attname,n_distinct,correlation \nFROM pg_stats WHERE schemaname = 'public';\n```\n\n@database-team @backend-performance @slack-db-alerts",
+      "tags": ["service:attendance-dashboard-backend", "alert-type:database", "severity:medium"],
+      "options": {
+        "thresholds": {
+          "critical": 200,
+          "warning": 100
+        },
+        "notify_audit": false,
+        "notify_no_data": true,
+        "no_data_timeframe": 20,
+        "require_full_window": false,
+        "evaluation_delay": 60,
+        "renotify_interval": 60
+      }
+    },
+    {
+      "name": "📱 Poor Core Web Vitals - LCP (>2.5s)",
+      "type": "metric alert",
+      "query": "avg(last_15m):avg:rum.largest_contentful_paint.95p{application_id:*} > 2500",
+      "message": "**SEO/UX ALERT: Poor Largest Contentful Paint Performance**\n\nLCP (Largest Contentful Paint) 95th percentile has exceeded 2.5 seconds, failing Google's Core Web Vitals threshold.\n\n**Current LCP:** {{value}}ms ({{value|float|mul:0.001}}s)\n**Threshold:** 2500ms (2.5s)\n**Impact:** SEO rankings and user experience significantly affected\n\n**Business Impact:**\n- ❌ Failing Google Core Web Vitals assessment\n- ❌ Potential negative impact on search rankings\n- ❌ Poor user experience leading to higher bounce rates\n- ❌ Mobile performance especially affected\n\n**Optimization Actions:**\n1. **Image Optimization:**\n   - Implement proper image lazy loading\n   - Use next-gen formats (WebP, AVIF)\n   - Optimize image sizes and compression\n\n2. **Critical Resource Loading:**\n   - Preload critical CSS and fonts\n   - Minimize render-blocking resources\n   - Optimize above-the-fold content delivery\n\n3. **Server Response Time:**\n   - Check TTFB performance\n   - Implement proper caching strategies\n   - Use CDN for static assets\n\n4. **Code Optimization:**\n   - Review component rendering performance\n   - Minimize JavaScript execution time\n   - Implement code splitting effectively\n\n**Tools for Investigation:**\n- [PageSpeed Insights](https://pagespeed.web.dev/)\n- [WebPageTest](https://webpagetest.org/)\n- Chrome DevTools Performance tab\n\n@frontend-team @web-performance @seo-team @ux-team",
+      "tags": ["service:attendance-dashboard-frontend", "alert-type:web-vitals", "severity:medium"],
+      "options": {
+        "thresholds": {
+          "critical": 2500,
+          "warning": 2000
+        },
+        "notify_audit": false,
+        "notify_no_data": true,
+        "no_data_timeframe": 30,
+        "require_full_window": true,
+        "evaluation_delay": 120,
+        "renotify_interval": 180
+      }
+    },
+    {
+      "name": "🔄 High CPU Usage (>80%)",
+      "type": "metric alert",
+      "query": "avg(last_10m):avg:system.cpu.user{service:attendance-dashboard-backend} > 80",
+      "message": "**INFRASTRUCTURE ALERT: High CPU Usage**\n\nServer CPU usage has exceeded 80% threshold.\n\n**Current CPU Usage:** {{value}}%\n**Threshold:** 80%\n**Host:** {{host.name}}\n**Service:** {{service.name}}\n\n**Performance Impact:** High CPU usage may cause:\n- Increased response times\n- Request timeouts\n- Degraded user experience\n- Potential service instability\n\n**Immediate Investigation:**\n1. **Process Analysis:**\n   ```bash\n   top -p $(pgrep -f attendance-dashboard)\n   htop\n   ps aux --sort=-%cpu | head -10\n   ```\n\n2. **Application Metrics:**\n   - Check for infinite loops or inefficient algorithms\n   - Review recent code deployments\n   - Monitor garbage collection activity (Node.js)\n   - Analyze event loop lag\n\n3. **Load Analysis:**\n   - Verify current request volume\n   - Check for unusual traffic patterns\n   - Review background job processing\n\n4. **Scaling Actions:**\n   - Consider horizontal scaling if load-related\n   - Review PM2 cluster configuration\n   - Monitor load balancer distribution\n\n**Auto-Scaling Consideration:** If this persists, consider implementing auto-scaling based on CPU thresholds.\n\n@infrastructure-team @devops @backend-alerts @pagerduty-medium-priority",
+      "tags": [
+        "service:attendance-dashboard-backend",
+        "alert-type:infrastructure",
+        "severity:high"
+      ],
+      "options": {
+        "thresholds": {
+          "critical": 80,
+          "warning": 65
+        },
+        "notify_audit": false,
+        "notify_no_data": true,
+        "no_data_timeframe": 10,
+        "require_full_window": false,
+        "evaluation_delay": 60,
+        "renotify_interval": 30
+      }
+    },
+    {
+      "name": "📁 File Upload Failure Rate (>10%)",
+      "type": "metric alert",
+      "query": "avg(last_15m):(sum:attendance.upload.failed{*}.as_rate() / (sum:attendance.upload.success{*}.as_rate() + sum:attendance.upload.failed{*}.as_rate())) * 100 > 10",
+      "message": "**BUSINESS CRITICAL: High File Upload Failure Rate**\n\nAttendance file upload failure rate has exceeded 10%.\n\n**Current Failure Rate:** {{value}}%\n**Threshold:** 10%\n**Environment:** {{env.name}}\n\n**Business Impact:**\n- 🚫 Users cannot upload attendance data successfully\n- 📊 Data processing pipeline disrupted\n- 👥 Employee attendance tracking affected\n- ⏱️ Manual intervention may be required\n\n**Common Causes & Solutions:**\n\n1. **File Format Issues:**\n   - Check file validation logic\n   - Review supported formats and size limits\n   - Verify CSV/Excel parsing libraries\n\n2. **Server Storage:**\n   - Monitor disk space availability\n   - Check file upload directory permissions\n   - Verify temporary file cleanup\n\n3. **Database Issues:**\n   - Check database connection stability\n   - Verify table locks or constraints\n   - Review batch insert performance\n\n4. **Memory/Processing:**\n   - Monitor memory usage during file processing\n   - Check for large file handling issues\n   - Review streaming upload implementation\n\n**Investigation Commands:**\n```bash\n# Check disk space\ndf -h\n\n# Monitor file upload directory\nls -la /path/to/uploads/\ndu -sh /path/to/uploads/\n\n# Check recent error logs\ntail -f /var/log/attendance-dashboard/error.log | grep -i upload\n```\n\n**User Communication:** Consider notifying users of upload issues and providing alternative submission methods.\n\n@product-team @backend-team @support-team @business-critical",
+      "tags": ["service:attendance-dashboard-backend", "alert-type:business", "severity:high"],
+      "options": {
+        "thresholds": {
+          "critical": 10,
+          "warning": 5
+        },
+        "notify_audit": true,
+        "notify_no_data": false,
+        "require_full_window": false,
+        "evaluation_delay": 60,
+        "renotify_interval": 60
+      }
+    },
+    {
+      "name": "🔌 Service Unavailability",
+      "type": "service check",
+      "query": "\"http.can_connect\".over(\"instance:attendance-dashboard-backend\").last(3).count_by_status()",
+      "message": "**CRITICAL OUTAGE: Service Unavailable**\n\n🚨 **IMMEDIATE ACTION REQUIRED** 🚨\n\nThe attendance dashboard backend service is not responding to health checks.\n\n**Service:** Attendance Dashboard API\n**Check:** HTTP connectivity test\n**Duration:** Service has been down for over 3 minutes\n\n**Immediate Response Plan:**\n\n**Step 1: Verify Service Status**\n```bash\n# Check service status\nsudo systemctl status attendance-dashboard\npm2 status\n\n# Check process\nps aux | grep attendance\nnetstat -tlnp | grep :3002\n```\n\n**Step 2: Quick Recovery Actions**\n```bash\n# Restart service\npm2 restart attendance-dashboard\n\n# If PM2 issues, restart PM2\npm2 kill\npm2 start ecosystem.config.js\n\n# Check logs immediately after restart\npm2 logs attendance-dashboard --lines 50\n```\n\n**Step 3: Investigate Root Cause**\n- Check server resources (CPU, memory, disk)\n- Review recent deployments\n- Verify database connectivity\n- Check external dependencies\n\n**Step 4: Communication**\n- Update status page if available\n- Notify stakeholders of outage\n- Provide ETA for resolution\n\n**Escalation:** If service doesn't recover within 10 minutes, escalate to senior engineering team.\n\n**Business Impact:** \n- ❌ All users cannot access the attendance system\n- ❌ Attendance data cannot be uploaded or processed\n- ❌ Employee clock-in/out functionality unavailable\n\n@pagerduty-critical @infrastructure-team @engineering-manager @product-manager @on-call-engineer",
+      "tags": [
+        "service:attendance-dashboard-backend",
+        "alert-type:availability",
+        "severity:critical"
+      ],
+      "options": {
+        "thresholds": {
+          "critical": 3,
+          "warning": 1
+        },
+        "notify_audit": true,
+        "notify_no_data": true,
+        "no_data_timeframe": 5,
+        "new_host_delay": 300,
+        "renotify_interval": 15,
+        "escalation_message": "🔥🔥🔥 **CRITICAL ESCALATION** 🔥🔥🔥\n\nService has been down for over 15 minutes. This is now a P0 incident requiring immediate senior engineering attention.\n\n**Actions Required:**\n- Activate incident response team\n- Set up incident bridge call\n- Consider rollback to last known good deployment\n- Implement emergency maintenance page\n\n@cto @engineering-director @incident-commander"
+      }
+    },
+    {
+      "name": "📊 Anomaly Detection - Request Volume",
+      "type": "anomaly alert",
+      "query": "avg(last_4h):anomalies(avg:trace.express.request.hits{service:attendance-dashboard-backend}.as_rate(), 'basic', 2, direction='both', alert_window='last_15m', interval=300, count_default_zero='true') >= 1",
+      "message": "**ANOMALY DETECTED: Unusual Request Volume**\n\nThe attendance dashboard is experiencing unusual request volume patterns.\n\n**Anomaly Type:** {{anomaly_type}}\n**Deviation:** Significantly {{direction}} than normal\n**Service:** {{service.name}}\n**Detection Window:** Last 15 minutes\n**Comparison Period:** Last 4 hours\n\n**Possible Scenarios:**\n\n**If Significantly Higher Traffic:**\n🔺 **Potential Causes:**\n- Viral content or news coverage\n- Marketing campaign driving traffic\n- Automated bot activity\n- DDoS attack\n- Batch processing jobs\n\n🔍 **Investigation Steps:**\n- Check traffic sources and user agents\n- Monitor error rates for signs of overload\n- Review recent marketing activities\n- Analyze geographic distribution of requests\n- Check for suspicious IP patterns\n\n**If Significantly Lower Traffic:**\n🔻 **Potential Causes:**\n- Service degradation affecting user access\n- Network connectivity issues\n- Frontend application problems\n- External service dependencies down\n- Scheduled maintenance notifications\n\n🔍 **Investigation Steps:**\n- Verify service health and response times\n- Check frontend application status\n- Review recent deployments or changes\n- Monitor external dependency status\n- Check for any user-facing error messages\n\n**Monitoring Recommendations:**\n- Continue monitoring for 30 minutes\n- Compare with historical patterns for same day/time\n- Check correlation with other metrics (errors, latency)\n- Review user feedback channels\n\n**Auto-Scaling:** Ensure auto-scaling policies are configured to handle traffic spikes appropriately.\n\n@monitoring-team @product-analytics @infrastructure-team",
+      "tags": ["service:attendance-dashboard-backend", "alert-type:anomaly", "severity:medium"],
+      "options": {
+        "threshold_windows": {
+          "recovery_window": "last_15m",
+          "trigger_window": "last_15m"
+        },
+        "notify_audit": false,
+        "notify_no_data": false,
+        "renotify_interval": 120
+      }
+    }
+  ],
+  "alert_policies": {
+    "notification_settings": {
+      "channels": {
+        "slack-critical": "#alerts-critical",
+        "slack-alerts": "#alerts-general",
+        "slack-db-alerts": "#database-alerts",
+        "pagerduty-critical": "P0-incidents",
+        "pagerduty-high-priority": "P1-incidents",
+        "pagerduty-medium-priority": "P2-incidents"
+      },
+      "escalation_policies": {
+        "critical": [
+          "immediate: @on-call-engineer, @pagerduty-critical",
+          "after_15min: @engineering-manager, @incident-commander",
+          "after_30min: @cto, @engineering-director"
+        ],
+        "high": [
+          "immediate: @on-call-engineer, @slack-critical",
+          "after_30min: @engineering-manager",
+          "after_60min: @engineering-director"
+        ],
+        "medium": ["immediate: @team-lead, @slack-alerts", "after_60min: @engineering-manager"]
+      }
+    },
+    "maintenance_windows": {
+      "scheduled_maintenance": "0 2 * * SUN",
+      "deployment_window": "0 1 * * *",
+      "backup_window": "0 3 * * *"
+    },
+    "alert_dependencies": {
+      "service_availability": {
+        "depends_on": ["database_connectivity", "redis_connectivity"],
+        "suppress_alerts": ["api_latency", "error_rate"]
+      }
+    }
+  }
+}

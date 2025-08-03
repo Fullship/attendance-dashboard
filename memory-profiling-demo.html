@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Memory Profiling Demo</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+        background: #f8fafc;
+      }
+
+      .container {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+      }
+
+      h1 {
+        color: #1f2937;
+        margin-bottom: 8px;
+      }
+
+      h2 {
+        color: #374151;
+        border-bottom: 2px solid #e5e7eb;
+        padding-bottom: 8px;
+      }
+
+      .subtitle {
+        color: #6b7280;
+        margin-bottom: 24px;
+      }
+
+      .button-group {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+      }
+
+      button {
+        background: #3b82f6;
+        color: white;
+        border: none;
+        padding: 10px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: background-color 0.2s;
+      }
+
+      button:hover {
+        background: #2563eb;
+      }
+
+      button:disabled {
+        background: #9ca3af;
+        cursor: not-allowed;
+      }
+
+      .success {
+        background: #10b981;
+      }
+
+      .warning {
+        background: #f59e0b;
+      }
+
+      .danger {
+        background: #ef4444;
+      }
+
+      .input-group {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+
+      input[type='text'],
+      select {
+        padding: 8px 12px;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 14px;
+      }
+
+      label {
+        font-weight: 500;
+        color: #374151;
+        min-width: 80px;
+      }
+
+      .output {
+        background: #1f2937;
+        color: #f3f4f6;
+        padding: 16px;
+        border-radius: 8px;
+        font-family: 'Monaco', 'Menlo', monospace;
+        font-size: 13px;
+        line-height: 1.4;
+        max-height: 400px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        margin-top: 16px;
+      }
+
+      .status {
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-weight: 500;
+        margin-bottom: 16px;
+      }
+
+      .status.connected {
+        background: #dcfdf7;
+        color: #065f46;
+        border: 1px solid #a7f3d0;
+      }
+
+      .status.disconnected {
+        background: #fef2f2;
+        color: #991b1b;
+        border: 1px solid #fecaca;
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 20px;
+      }
+
+      .stat-card {
+        background: #f9fafb;
+        padding: 16px;
+        border-radius: 8px;
+        border: 1px solid #e5e7eb;
+      }
+
+      .stat-label {
+        font-size: 12px;
+        color: #6b7280;
+        text-transform: uppercase;
+        font-weight: 600;
+        margin-bottom: 4px;
+      }
+
+      .stat-value {
+        font-size: 20px;
+        font-weight: 700;
+        color: #1f2937;
+      }
+
+      .snapshot-list {
+        max-height: 200px;
+        overflow-y: auto;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+      }
+
+      .snapshot-item {
+        padding: 12px;
+        border-bottom: 1px solid #e5e7eb;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .snapshot-item:last-child {
+        border-bottom: none;
+      }
+
+      .snapshot-name {
+        font-family: monospace;
+        font-size: 12px;
+      }
+
+      .snapshot-size {
+        color: #6b7280;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🧠 Memory Profiling Demo</h1>
+      <p class="subtitle">Test and demonstrate heapdump memory profiling functionality</p>
+
+      <div id="connectionStatus" class="status disconnected">
+        ❌ Not connected - Click "Test Connection" to check API availability
+      </div>
+
+      <div class="button-group">
+        <button onclick="testConnection()">Test Connection</button>
+        <button onclick="getInstructions()">Get Instructions</button>
+        <button onclick="getMemoryStats()">Get Memory Stats</button>
+        <button onclick="listSnapshots()">List Snapshots</button>
+      </div>
+    </div>
+
+    <div class="container">
+      <h2>📊 Current Memory Statistics</h2>
+      <div id="memoryStats" class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Heap Used</div>
+          <div class="stat-value" id="heapUsed">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Heap Total</div>
+          <div class="stat-value" id="heapTotal">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">RSS</div>
+          <div class="stat-value" id="rss">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Uptime</div>
+          <div class="stat-value" id="uptime">-</div>
+        </div>
+      </div>
+      <button onclick="getMemoryStats()">Refresh Stats</button>
+    </div>
+
+    <div class="container">
+      <h2>📸 Memory Snapshots</h2>
+
+      <div class="input-group">
+        <label>Label:</label>
+        <input type="text" id="snapshotLabel" placeholder="e.g., after-operation" />
+        <button onclick="takeSnapshot()" class="success">Take Snapshot</button>
+      </div>
+
+      <div class="input-group">
+        <label>Operation:</label>
+        <select id="operationType">
+          <option value="get-attendance">Get Attendance</option>
+          <option value="get-users">Get Users</option>
+          <option value="get-dashboard-stats">Get Dashboard Stats</option>
+          <option value="force-gc">Force GC</option>
+        </select>
+        <input type="text" id="operationLabel" placeholder="operation label" />
+        <button onclick="compareOperation()" class="warning">Compare Operation</button>
+      </div>
+
+      <div class="button-group">
+        <button onclick="forceGC()" class="warning">Force Garbage Collection</button>
+        <button onclick="cleanupSnapshots()" class="danger">Cleanup Old Snapshots</button>
+      </div>
+
+      <div id="snapshotsList" class="snapshot-list" style="margin-top: 16px">
+        <div class="snapshot-item">
+          <span>No snapshots loaded</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="container">
+      <h2>📝 Output Console</h2>
+      <button onclick="clearOutput()">Clear Output</button>
+      <div id="output" class="output">
+        Ready - Click any button above to test the memory profiling API...
+      </div>
+    </div>
+
+    <script>
+      const API_BASE = '/api/admin/dev/memory';
+      let isConnected = false;
+
+      // Helper function to log output
+      function log(message) {
+        const output = document.getElementById('output');
+        const timestamp = new Date().toLocaleTimeString();
+        output.textContent += `[${timestamp}] ${message}\n`;
+        output.scrollTop = output.scrollHeight;
+      }
+
+      // Helper function to clear output
+      function clearOutput() {
+        document.getElementById('output').textContent = '';
+      }
+
+      // Helper function to update connection status
+      function updateConnectionStatus(connected, message) {
+        const status = document.getElementById('connectionStatus');
+        isConnected = connected;
+        if (connected) {
+          status.className = 'status connected';
+          status.textContent = `✅ ${message || 'Connected to memory profiling API'}`;
+        } else {
+          status.className = 'status disconnected';
+          status.textContent = `❌ ${
+            message || 'Disconnected - Check if server is running in development mode'
+          }`;
+        }
+      }
+
+      // Helper function to make API requests
+      async function apiRequest(endpoint, options = {}) {
+        try {
+          const token = localStorage.getItem('token') || 'demo-token';
+          const response = await fetch(`${API_BASE}${endpoint}`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+              ...options.headers,
+            },
+            ...options,
+          });
+
+          if (!response.ok) {
+            const error = await response.text();
+            throw new Error(`HTTP ${response.status}: ${error}`);
+          }
+
+          return await response.json();
+        } catch (error) {
+          log(`❌ API Error: ${error.message}`);
+          updateConnectionStatus(false, error.message);
+          throw error;
+        }
+      }
+
+      // Test API connection
+      async function testConnection() {
+        log('🔍 Testing connection to memory profiling API...');
+        try {
+          const result = await apiRequest('/instructions');
+          updateConnectionStatus(true, 'Memory profiling API available');
+          log('✅ Connection successful!');
+          log(`   Profiler Available: ${result.profilerAvailable ? 'Yes' : 'No'}`);
+          log(`   Environment: ${result.environment}`);
+          if (!result.profilerAvailable) {
+            log('⚠️  Heapdump not available - ensure NODE_ENV=development');
+          }
+        } catch (error) {
+          log('❌ Connection failed - ensure server is running with NODE_ENV=development');
+        }
+      }
+
+      // Get memory profiling instructions
+      async function getInstructions() {
+        log('📋 Getting memory profiling instructions...');
+        try {
+          const result = await apiRequest('/instructions');
+          log('✅ Instructions retrieved:');
+          log('');
+          log('Setup:');
+          Object.entries(result.instructions.setup).forEach(([key, value]) => {
+            log(`  ${key}: ${value}`);
+          });
+          log('');
+          log('API Endpoints:');
+          Object.entries(result.instructions.usage).forEach(([key, value]) => {
+            log(`  ${key}: ${value}`);
+          });
+          log('');
+          log('Analysis Tips:');
+          result.instructions.analysis.tips.forEach(tip => {
+            log(`  • ${tip}`);
+          });
+        } catch (error) {
+          // Error already logged in apiRequest
+        }
+      }
+
+      // Get current memory statistics
+      async function getMemoryStats() {
+        log('📊 Getting current memory statistics...');
+        try {
+          const result = await apiRequest('/stats');
+          updateConnectionStatus(true);
+
+          // Update stat cards
+          document.getElementById('heapUsed').textContent = result.stats.memory.heapUsed;
+          document.getElementById('heapTotal').textContent = result.stats.memory.heapTotal;
+          document.getElementById('rss').textContent = result.stats.memory.rss;
+          document.getElementById('uptime').textContent = `${result.stats.process.uptime.toFixed(
+            1
+          )}s`;
+
+          log('✅ Memory stats updated:');
+          log(
+            `   Heap Used: ${result.stats.memory.heapUsed} (${result.stats.memory.heapUsedPercentage})`
+          );
+          log(`   Heap Total: ${result.stats.memory.heapTotal}`);
+          log(`   RSS: ${result.stats.memory.rss}`);
+          log(
+            `   System Memory: ${result.stats.system.freeMemory} / ${result.stats.system.totalMemory} free`
+          );
+        } catch (error) {
+          // Error already logged in apiRequest
+        }
+      }
+
+      // Take a memory snapshot
+      async function takeSnapshot() {
+        const label = document.getElementById('snapshotLabel').value;
+        log(`📸 Taking memory snapshot${label ? ` (${label})` : ''}...`);
+
+        try {
+          const result = await apiRequest('/snapshot', {
+            method: 'POST',
+            body: JSON.stringify({ label }),
+          });
+
+          log('✅ Snapshot taken successfully!');
+          log(`   Filename: ${result.snapshot.filename}`);
+          log(`   File Size: ${result.snapshot.fileSize}`);
+          log(`   Heap Used: ${result.snapshot.memoryUsage.heapUsed}`);
+          log(`   Location: ${result.snapshot.filepath}`);
+          log('');
+          log(
+            '💡 Analysis: Open Chrome DevTools > Memory tab > Load Profile > Select .heapsnapshot file'
+          );
+
+          // Refresh snapshot list
+          setTimeout(listSnapshots, 500);
+
+          // Clear label input
+          document.getElementById('snapshotLabel').value = '';
+        } catch (error) {
+          // Error already logged in apiRequest
+        }
+      }
+
+      // List all snapshots
+      async function listSnapshots() {
+        log('📁 Listing memory snapshots...');
+        try {
+          const result = await apiRequest('/snapshots');
+          updateConnectionStatus(true);
+
+          log(`✅ Found ${result.count} snapshots`);
+
+          // Update snapshot list display
+          const snapshotsList = document.getElementById('snapshotsList');
+          if (result.count === 0) {
+            snapshotsList.innerHTML =
+              '<div class="snapshot-item"><span>No snapshots found</span></div>';
+          } else {
+            snapshotsList.innerHTML = result.snapshots
+              .map(
+                snapshot => `
+                        <div class="snapshot-item">
+                            <div>
+                                <div class="snapshot-name">${snapshot.filename}</div>
+                                <div class="snapshot-size">${snapshot.size} • ${new Date(
+                  snapshot.created
+                ).toLocaleString()}</div>
+                            </div>
+                        </div>
+                    `
+              )
+              .join('');
+
+            result.snapshots.slice(0, 5).forEach(snapshot => {
+              log(`   • ${snapshot.filename} (${snapshot.size})`);
+            });
+            if (result.count > 5) {
+              log(`   ... and ${result.count - 5} more`);
+            }
+          }
+        } catch (error) {
+          // Error already logged in apiRequest
+        }
+      }
+
+      // Force garbage collection
+      async function forceGC() {
+        log('🗑️ Forcing garbage collection...');
+        try {
+          const result = await apiRequest('/gc', { method: 'POST' });
+          updateConnectionStatus(true);
+
+          if (result.result.freed) {
+            log('✅ Garbage collection completed:');
+            log(`   Memory freed: ${result.result.freed}`);
+            log(`   Before: ${result.result.before.heapUsed}`);
+            log(`   After: ${result.result.after.heapUsed}`);
+          } else {
+            log('ℹ️ Garbage collection not available:');
+            log(`   ${result.result.message}`);
+            if (result.result.example) {
+              log(`   Example: ${result.result.example}`);
+            }
+          }
+
+          // Refresh memory stats
+          setTimeout(getMemoryStats, 500);
+        } catch (error) {
+          // Error already logged in apiRequest
+        }
+      }
+
+      // Compare memory before/after operation
+      async function compareOperation() {
+        const operation = document.getElementById('operationType').value;
+        const label = document.getElementById('operationLabel').value;
+
+        log(
+          `🔍 Comparing memory before/after operation: ${operation}${label ? ` (${label})` : ''}...`
+        );
+
+        try {
+          const result = await apiRequest('/compare-operation', {
+            method: 'POST',
+            body: JSON.stringify({ operation, label }),
+          });
+
+          log('✅ Memory comparison completed:');
+          log(`   Before snapshot: ${result.snapshots.before.filename}`);
+          log(`   After snapshot: ${result.snapshots.after.filename}`);
+          log('');
+
+          if (result.comparison.operationError) {
+            log(`❌ Operation failed: ${result.comparison.operationError}`);
+          } else {
+            log('✅ Operation completed successfully');
+          }
+
+          log('');
+          log('📊 Analysis Instructions:');
+          result.instructions.steps.forEach(step => {
+            log(`   ${step}`);
+          });
+
+          // Refresh snapshot list
+          setTimeout(listSnapshots, 500);
+
+          // Clear label input
+          document.getElementById('operationLabel').value = '';
+        } catch (error) {
+          // Error already logged in apiRequest
+        }
+      }
+
+      // Clean up old snapshots
+      async function cleanupSnapshots() {
+        const keepCount = prompt('How many recent snapshots to keep?', '5');
+        if (!keepCount) return;
+
+        log(`🧹 Cleaning up snapshots (keeping ${keepCount} most recent)...`);
+
+        try {
+          const result = await apiRequest(`/snapshots?keepCount=${keepCount}`, {
+            method: 'DELETE',
+          });
+
+          log('✅ Cleanup completed:');
+          log(`   ${result.message}`);
+          if (result.deleted > 0) {
+            log(`   Deleted: ${result.deleted} snapshots`);
+            log(`   Remaining: ${result.remaining} snapshots`);
+          }
+
+          // Refresh snapshot list
+          setTimeout(listSnapshots, 500);
+        } catch (error) {
+          // Error already logged in apiRequest
+        }
+      }
+
+      // Auto-refresh memory stats every 30 seconds
+      setInterval(() => {
+        if (isConnected) {
+          getMemoryStats();
+        }
+      }, 30000);
+
+      // Initial connection test
+      window.addEventListener('load', () => {
+        testConnection();
+      });
+    </script>
+  </body>
+</html>

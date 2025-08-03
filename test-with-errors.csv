@@ -1,0 +1,9 @@
+email,date,clock_in,clock_out,status,notes
+john.doe@example.com,2024-01-15,09:00,17:00,present,Regular day
+jane.smith@example.com,2024-01-15,09:15,17:30,late,Traffic delay
+invalid-email,2024-01-15,09:00,17:00,present,Invalid email format
+bob.wilson@example.com,invalid-date,09:00,17:00,present,Invalid date format
+alice.johnson@example.com,2024-01-15,25:00,17:00,present,Invalid time format
+nonexistent@example.com,2024-01-15,09:00,17:00,present,User doesn't exist
+charlie.brown@example.com,2024-01-15,09:00,19:00,invalid-status,Invalid status
+david.lee@example.com,2024-01-15,,17:00,present,Missing clock in time

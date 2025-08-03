@@ -1,0 +1,4 @@
+First Name,Last Name,ID,Department,Date,Weekday,Timetable,Work Start Date,Work Start Time,Work End Date,Work End Time,Clock-In Date,Clock-In Time,Clock-In Source,Clock-Out Date,Clock-Out Time,Clock-Out Source,Attendance Status,Worked Hours,Absent Duration,Late Duration,Early Leave Duration,Break Duration,Leave Duration,Overtime Duration,Workday Overtime Duration,Weekend Overtime Duration
+John,Doe,2,IT,2025-07-01,Monday,Regular,2025-07-01,09:00,2025-07-01,17:00,2025-07-01,09:00,Manual,2025-07-01,17:00,Manual,present,8,0,0,0,1,0,0,0,0
+Jane,Smith,3,HR,2025-07-01,Monday,Regular,2025-07-01,09:00,2025-07-01,17:00,2025-07-01,09:15,Manual,2025-07-01,17:00,Manual,late,7.75,0,0.25,0,1,0,0,0,0
+Mike,Johnson,4,Finance,2025-07-01,Monday,Regular,2025-07-01,09:00,2025-07-01,17:00,,,,,,,,absent,0,8,0,0,0,0,0,0,0

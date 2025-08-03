@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Employee Edit/Delete Endpoints</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; }
+        .response { background: #f5f5f5; padding: 10px; margin: 10px 0; white-space: pre-wrap; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        input, select { padding: 5px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Employee Management API Test</h1>
+        
+        <div class="test-section">
+            <h2>1. Login (Required for authenticated requests)</h2>
+            <input type="email" id="loginEmail" placeholder="Email" value="admin@example.com">
+            <input type="password" id="loginPassword" placeholder="Password" value="password">
+            <button onclick="login()">Login</button>
+            <div id="loginResponse" class="response"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>2. Get All Employees</h2>
+            <button onclick="getEmployees()">Get Employees</button>
+            <div id="employeesResponse" class="response"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>3. Create Employee</h2>
+            <input type="text" id="createFirstName" placeholder="First Name" value="Test">
+            <input type="text" id="createLastName" placeholder="Last Name" value="User">
+            <input type="email" id="createEmail" placeholder="Email" value="testuser@example.com">
+            <input type="password" id="createPassword" placeholder="Password" value="password123">
+            <label><input type="checkbox" id="createIsAdmin"> Is Admin</label>
+            <button onclick="createEmployee()">Create Employee</button>
+            <div id="createResponse" class="response"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>4. Update Employee</h2>
+            <input type="number" id="updateId" placeholder="Employee ID">
+            <input type="text" id="updateFirstName" placeholder="First Name">
+            <input type="text" id="updateLastName" placeholder="Last Name">
+            <input type="email" id="updateEmail" placeholder="Email">
+            <label><input type="checkbox" id="updateIsAdmin"> Is Admin</label>
+            <button onclick="updateEmployee()">Update Employee</button>
+            <div id="updateResponse" class="response"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>5. Delete Employee</h2>
+            <input type="number" id="deleteId" placeholder="Employee ID">
+            <button onclick="deleteEmployee()">Delete Employee</button>
+            <div id="deleteResponse" class="response"></div>
+        </div>
+    </div>
+
+    <script>
+        let authToken = '';
+        const API_BASE = 'http://localhost:3002/api';
+
+        async function makeRequest(url, options = {}) {
+            const defaultOptions = {
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(authToken && { 'Authorization': `Bearer ${authToken}` })
+                }
+            };
+            
+            const response = await fetch(API_BASE + url, {
+                ...defaultOptions,
+                ...options,
+                headers: { ...defaultOptions.headers, ...options.headers }
+            });
+            
+            const data = await response.json();
+            return { status: response.status, data };
+        }
+
+        async function login() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            try {
+                const result = await makeRequest('/auth/login', {
+                    method: 'POST',
+                    body: JSON.stringify({ email, password })
+                });
+                
+                if (result.status === 200) {
+                    authToken = result.data.token;
+                    document.getElementById('loginResponse').textContent = 
+                        `Login successful! Token: ${authToken.substring(0, 20)}...`;
+                } else {
+                    document.getElementById('loginResponse').textContent = 
+                        `Login failed: ${JSON.stringify(result.data, null, 2)}`;
+                }
+            } catch (error) {
+                document.getElementById('loginResponse').textContent = `Error: ${error.message}`;
+            }
+        }
+
+        async function getEmployees() {
+            try {
+                const result = await makeRequest('/admin/employees');
+                document.getElementById('employeesResponse').textContent = 
+                    JSON.stringify(result.data, null, 2);
+            } catch (error) {
+                document.getElementById('employeesResponse').textContent = `Error: ${error.message}`;
+            }
+        }
+
+        async function createEmployee() {
+            const firstName = document.getElementById('createFirstName').value;
+            const lastName = document.getElementById('createLastName').value;
+            const email = document.getElementById('createEmail').value;
+            const password = document.getElementById('createPassword').value;
+            const isAdmin = document.getElementById('createIsAdmin').checked;
+            
+            try {
+                const result = await makeRequest('/admin/employees', {
+                    method: 'POST',
+                    body: JSON.stringify({ firstName, lastName, email, password, isAdmin })
+                });
+                
+                document.getElementById('createResponse').textContent = 
+                    JSON.stringify(result.data, null, 2);
+            } catch (error) {
+                document.getElementById('createResponse').textContent = `Error: ${error.message}`;
+            }
+        }
+
+        async function updateEmployee() {
+            const id = document.getElementById('updateId').value;
+            const firstName = document.getElementById('updateFirstName').value;
+            const lastName = document.getElementById('updateLastName').value;
+            const email = document.getElementById('updateEmail').value;
+            const isAdmin = document.getElementById('updateIsAdmin').checked;
+            
+            if (!id) {
+                document.getElementById('updateResponse').textContent = 'Please enter an Employee ID';
+                return;
+            }
+            
+            try {
+                const result = await makeRequest(`/admin/employees/${id}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ firstName, lastName, email, isAdmin })
+                });
+                
+                document.getElementById('updateResponse').textContent = 
+                    JSON.stringify(result.data, null, 2);
+            } catch (error) {
+                document.getElementById('updateResponse').textContent = `Error: ${error.message}`;
+            }
+        }
+
+        async function deleteEmployee() {
+            const id = document.getElementById('deleteId').value;
+            
+            if (!id) {
+                document.getElementById('deleteResponse').textContent = 'Please enter an Employee ID';
+                return;
+            }
+            
+            if (!confirm(`Are you sure you want to delete employee with ID ${id}?`)) {
+                return;
+            }
+            
+            try {
+                const result = await makeRequest(`/admin/employees/${id}`, {
+                    method: 'DELETE'
+                });
+                
+                document.getElementById('deleteResponse').textContent = 
+                    JSON.stringify(result.data, null, 2);
+            } catch (error) {
+                document.getElementById('deleteResponse').textContent = `Error: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>

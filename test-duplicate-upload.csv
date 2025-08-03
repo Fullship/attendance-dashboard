@@ -1,0 +1,9 @@
+First Name,Last Name,Date,Clock-In Time,Clock-Out Time,Worked Hours,Attendance Status
+John,Doe,01/01/2025,09:00,17:00,8,present
+Jane,Smith,01/01/2025,08:30,16:30,8,present
+John,Doe,02/01/2025,09:15,17:15,8,late
+Bob,Johnson,01/01/2025,09:00,17:00,8,present
+Jane,Smith,02/01/2025,08:30,16:30,8,present
+Alice,Brown,01/01/2025,09:00,16:00,7,present
+John,Doe,03/01/2025,09:00,17:00,8,present
+Bob,Johnson,02/01/2025,09:30,17:30,8,late

@@ -1,0 +1,38 @@
+# Dockerfile for Nginx with Attendance Dashboard
+FROM nginx:alpine
+
+# Install additional packages
+RUN apk add --no-cache openssl
+
+# Copy Nginx configuration
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Copy React build files (these should be built beforehand)
+COPY frontend/build /var/www/attendance-dashboard/build
+
+# Create necessary directories
+RUN mkdir -p /var/cache/nginx/attendance && \
+    mkdir -p /var/log/nginx && \
+    chown -R nginx:nginx /var/www/attendance-dashboard && \
+    chown -R nginx:nginx /var/cache/nginx/attendance
+
+# Generate self-signed SSL certificate (for development)
+RUN mkdir -p /etc/ssl/certs /etc/ssl/private && \
+    openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+    -keyout /etc/ssl/private/attendance-dashboard.key \
+    -out /etc/ssl/certs/attendance-dashboard.crt \
+    -subj "/C=US/ST=State/L=City/O=Attendance-Dashboard/CN=localhost"
+
+# Set permissions
+RUN chmod 600 /etc/ssl/private/attendance-dashboard.key && \
+    chmod 644 /etc/ssl/certs/attendance-dashboard.crt
+
+# Expose ports
+EXPOSE 80 443
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost/health || exit 1
+
+# Start Nginx
+CMD ["nginx", "-g", "daemon off;"]
