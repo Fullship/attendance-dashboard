@@ -1,22 +1,6 @@
 version: '3.8'
 
 services:
-  # Nginx Reverse Proxy
-  nginx:
-    image: nginx:alpine
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx.prod.conf:/etc/nginx/nginx.conf
-      - ./frontend/build:/usr/share/nginx/html
-      - ./ssl:/etc/nginx/ssl
-    depends_on:
-      - backend
-    networks:
-      - attendance-network
-    restart: unless-stopped
-
   # Backend API Server
   backend:
     build:
@@ -26,46 +10,9 @@ services:
       - NODE_ENV=production
       - PORT=3002
       - FRONTEND_URL=https://i.fullship.net
-    volumes:
-      - ./backend/.env.production:/app/.env
-      - ./backend/uploads:/app/uploads
-      - ./backend/logs:/app/logs
-    networks:
-      - attendance-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3002/health"]
+      test: ['CMD', 'curl', '-f', 'http://localhost:3002/health']
       interval: 30s
       timeout: 10s
       retries: 3
-
-  # PostgreSQL Database
-  postgres:
-    image: postgres:15
-    environment:
-      POSTGRES_DB: attendance_dashboard
-      POSTGRES_USER: attendance_user
-      POSTGRES_PASSWORD: YOUR_SECURE_DB_PASSWORD
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
-    networks:
-      - attendance-network
-    restart: unless-stopped
-
-  # Redis Cache
-  redis:
-    image: redis:7-alpine
-    volumes:
-      - redis_data:/data
-    networks:
-      - attendance-network
-    restart: unless-stopped
-
-networks:
-  attendance-network:
-    driver: bridge
-
-volumes:
-  postgres_data:
-  redis_data:
