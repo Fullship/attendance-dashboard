@@ -60,8 +60,18 @@
     "build:prod": "NODE_ENV=production GENERATE_SOURCEMAP=false REACT_APP_BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ) REACT_APP_BUILD_HASH=$(date +%s)-$(openssl rand -hex 4) react-app-rewired build",
     "build:stats": "NODE_ENV=production react-app-rewired build --stats",
     "test": "react-app-rewired test",
+    "test:ci": "react-app-rewired test --ci --coverage --watchAll=false",
+    "test:contracts": "node src/test-utils/contract-tests.js",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
+    "test:performance": "./performance-test.sh",
+    "test:all": "npm run test:ci && npm run test:contracts && npm run test:e2e",
+    "test:manual": "echo 'Please see MANUAL_TESTING_GUIDE.md for manual testing instructions'",
     "eject": "react-scripts eject",
     "storybook": "storybook dev -p 6006",
+    "storybook:build": "storybook build",
+    "storybook:test": "test-storybook",
     "build-storybook": "storybook build",
     "analyze": "npx webpack-bundle-analyzer build/static/js/*.js",
     "size": "npm run build:prod && du -sh build/ && ls -lah build/static/js/ && ls -lah build/static/css/"
@@ -87,6 +97,7 @@
   },
   "proxy": "http://localhost:3001",
   "devDependencies": {
+    "@playwright/test": "^1.54.2",
     "@storybook/addon-docs": "^9.0.16",
     "@storybook/preset-create-react-app": "^9.0.16",
     "@storybook/react-webpack5": "^9.0.16",
@@ -95,7 +106,7 @@
     "eslint-plugin-storybook": "^9.0.16",
     "prop-types": "^15.8.1",
     "react-app-rewired": "^2.2.1",
-    "storybook": "^9.0.16",
+    "storybook": "^9.1.1",
     "webpack-bundle-analyzer": "^4.10.2"
   }
 }

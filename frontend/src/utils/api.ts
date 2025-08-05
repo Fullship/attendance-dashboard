@@ -750,6 +750,99 @@ export const adminAPI = {
     const response = await api.put(`/admin-leave/admin/leave-request/${requestId}/review`, data);
     return response.data;
   },
+
+  // Admin Panel APIs
+  getCacheStats: async (): Promise<any> => {
+    const response = await api.get('/admin/cache/stats');
+    return response.data;
+  },
+
+  clearCache: async (): Promise<{ message: string; keysCleared: number }> => {
+    const response = await api.post('/admin/cache/clear');
+    return response.data;
+  },
+
+  getClusterStatus: async (): Promise<any> => {
+    const response = await api.get('/admin/cluster/status');
+    return response.data;
+  },
+
+  restartCluster: async (): Promise<{ message: string }> => {
+    const response = await api.post('/admin/cluster/restart');
+    return response.data;
+  },
+
+  restartWorker: async (workerId: number): Promise<{ message: string }> => {
+    const response = await api.post(`/admin/cluster/restart-worker/${workerId}`);
+    return response.data;
+  },
+
+  getProfilerStatus: async (): Promise<any> => {
+    const response = await api.get('/admin/profiler/status');
+    return response.data;
+  },
+
+  startCpuProfiling: async (duration: number): Promise<{ message: string }> => {
+    const response = await api.post('/admin/profiler/cpu/start', { duration });
+    return response.data;
+  },
+
+  stopCpuProfiling: async (): Promise<{ message: string; filename: string; downloadUrl: string; size?: number }> => {
+    const response = await api.post('/admin/profiler/cpu/stop');
+    return response.data;
+  },
+
+  takeMemorySnapshot: async (): Promise<{ message: string; filename: string; downloadUrl: string; size?: number }> => {
+    const response = await api.post('/admin/profiler/memory/snapshot');
+    return response.data;
+  },
+
+  startMemoryProfiling: async (): Promise<{ message: string }> => {
+    const response = await api.post('/admin/profiler/memory/start');
+    return response.data;
+  },
+
+  stopMemoryProfiling: async (): Promise<{ message: string; filename?: string; downloadUrl?: string; size?: number }> => {
+    const response = await api.post('/admin/profiler/memory/stop');
+    return response.data;
+  },
+
+  getMemorySnapshots: async (): Promise<{ profiles: any[] }> => {
+    const response = await api.get('/admin/profiler/memory/snapshots');
+    return response.data;
+  },
+
+  getLogs: async (params?: {
+    page?: number;
+    limit?: number;
+    level?: string;
+    source?: string;
+    search?: string;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<{
+    logs: any[];
+    pagination: any;
+    filters: any;
+  }> => {
+    const response = await api.get('/admin/logs', { params });
+    return response.data;
+  },
+
+  exportLogs: async (params?: {
+    level?: string;
+    source?: string;
+    search?: string;
+    startDate?: string;
+    endDate?: string;
+    format?: string;
+  }): Promise<Blob> => {
+    const response = await api.get('/admin/logs/export', { 
+      params,
+      responseType: 'blob'
+    });
+    return response.data;
+  },
 };
 
 // Role API
