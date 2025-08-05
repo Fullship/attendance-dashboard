@@ -6,7 +6,7 @@ import { PerformanceTracker } from './datadog';
 class MonitoredAPIService {
   private baseURL: string;
 
-  constructor(baseURL: string = process.env.REACT_APP_API_URL || 'http://localhost:3001/api') {
+  constructor(baseURL: string = process.env.REACT_APP_API_URL || 'http://localhost:3002/api') {
     this.baseURL = baseURL;
   }
 

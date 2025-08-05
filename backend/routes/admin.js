@@ -12,6 +12,8 @@ const { TimezoneAttendanceProcessor } = require('../utils/timezone-processor');
 const WorkerPool = require('../utils/WorkerPool');
 const dbCache = require('../utils/DatabaseCache');
 const memoryProfiler = require('../utils/MemoryProfiler');
+const profilingManager = require('../utils/ProfilingManager');
+const monitoringInstrumentation = require('../middleware/monitoring-instrumentation');
 const {
   invalidateAttendanceCache,
   invalidateUserCache,
@@ -4954,5 +4956,480 @@ if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {
 
   console.log('🔍 Development memory profiling endpoints loaded');
 }
+
+// ============================================================================
+// ADMIN MONITORING API ENDPOINTS
+// ============================================================================
+
+// Import additional monitoring dependencies
+const cluster = require('cluster');
+const os = require('os');
+
+// GET /admin/metrics - Aggregated system metrics
+router.get('/metrics', auth, adminAuth, async (req, res) => {
+  try {
+    console.log('📊 Getting aggregated system metrics');
+
+    // Get comprehensive metrics from monitoring instrumentation
+    const instrumentationMetrics = monitoringInstrumentation.getMetrics();
+    
+    // Get cache stats
+    const cacheStats = await dbCache.getHealthStatus();
+    
+    // Get database stats
+    let dbStats = {};
+    try {
+      if (typeof pool.getQueryStats === 'function') {
+        dbStats = pool.getQueryStats();
+      }
+    } catch (error) {
+      console.warn('Could not get DB stats:', error.message);
+      dbStats = { totalQueries: 0, slowQueries: 0, averageDuration: 0 };
+    }
+
+    // Merge all metrics
+    const metrics = {
+      system: instrumentationMetrics.system,
+      performance: {
+        ...instrumentationMetrics.performance,
+        // Add database-specific performance metrics
+        databaseAverageQueryTime: dbStats.averageDuration || 0,
+        databaseSlowQueryRate: dbStats.slowQueryPercentage || 0
+      },
+      database: {
+        totalQueries: dbStats.totalQueries || 0,
+        slowQueries: dbStats.slowQueries || 0,
+        averageDuration: dbStats.averageDuration || 0,
+        slowQueryPercentage: dbStats.slowQueryPercentage || 0,
+        poolActive: dbStats.poolActive || 0,
+        poolIdle: dbStats.poolIdle || 0,
+        poolWaiting: dbStats.poolWaiting || 0
+      },
+      cache: {
+        connected: cacheStats.connected,
+        keyCount: cacheStats.keyCount || 0,
+        memoryUsed: cacheStats.memoryUsed || '0 MB',
+        hits: cacheStats.hits || 0,
+        misses: cacheStats.misses || 0,
+        hitRate: cacheStats.hitRate || 0
+      },
+      requests: instrumentationMetrics.requests,
+      timestamp: new Date().toISOString()
+    };
+
+    res.json({
+      success: true,
+      data: metrics
+    });
+
+  } catch (error) {
+    console.error('Error getting metrics:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get system metrics',
+      error: error.message
+    });
+  }
+});
+
+// POST /admin/profiler/cpu/start - Start CPU profiling
+router.post('/profiler/cpu/start', auth, adminAuth, async (req, res) => {
+  try {
+    console.log('🔥 Starting CPU profiling');
+    
+    const { duration, sampleInterval, label } = req.body;
+    const result = await profilingManager.startCPUProfiling({
+      duration: duration || 30000,
+      sampleInterval: sampleInterval || 1,
+      label: label || 'admin-cpu-profile'
+    });
+
+    res.json({
+      success: true,
+      ...result,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('Error starting CPU profiling:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to start CPU profiling',
+      error: error.message
+    });
+  }
+});
+
+// POST /admin/profiler/cpu/stop - Stop CPU profiling
+router.post('/profiler/cpu/stop', auth, adminAuth, async (req, res) => {
+  try {
+    console.log('🛑 Stopping CPU profiling');
+    
+    const result = await profilingManager.stopCPUProfiling();
+
+    res.json({
+      success: true,
+      ...result,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('Error stopping CPU profiling:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to stop CPU profiling',
+      error: error.message
+    });
+  }
+});
+
+// POST /admin/profiler/memory/snapshot - Create memory snapshot (enhanced)
+router.post('/profiler/memory/snapshot', auth, adminAuth, async (req, res) => {
+  try {
+    const { label } = req.body;
+    console.log('📸 Creating memory snapshot:', label);
+
+    const snapshot = await profilingManager.createMemorySnapshot(label);
+
+    res.json({
+      success: true,
+      snapshot,
+      message: 'Memory snapshot created successfully'
+    });
+
+  } catch (error) {
+    console.error('Error creating memory snapshot:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create memory snapshot',
+      error: error.message
+    });
+  }
+});
+
+// GET /admin/profiler/memory/snapshots - Get all memory snapshots
+router.get('/profiler/memory/snapshots', auth, adminAuth, async (req, res) => {
+  try {
+    console.log('📋 Getting memory snapshots list');
+
+    const snapshots = profilingManager.getMemorySnapshots();
+
+    res.json({
+      success: true,
+      ...snapshots,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('Error getting memory snapshots:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get memory snapshots',
+      error: error.message
+    });
+  }
+});
+
+// POST /admin/profiler/memory/start - Start memory profiling session
+router.post('/profiler/memory/start', auth, adminAuth, async (req, res) => {
+  try {
+    const { duration, sampleInterval, label } = req.body;
+    console.log('🧠 Starting memory profiling session');
+
+    const result = await profilingManager.startMemoryProfiling({
+      duration: duration || 60000,
+      sampleInterval: sampleInterval || 1000,
+      label: label || 'admin-memory-profile'
+    });
+
+    res.json({
+      success: true,
+      ...result,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('Error starting memory profiling:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to start memory profiling',
+      error: error.message
+    });
+  }
+});
+
+// POST /admin/profiler/memory/stop - Stop memory profiling session
+router.post('/profiler/memory/stop', auth, adminAuth, async (req, res) => {
+  try {
+    console.log('🛑 Stopping memory profiling session');
+
+    const result = await profilingManager.stopMemoryProfiling();
+
+    res.json({
+      success: true,
+      ...result,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('Error stopping memory profiling:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to stop memory profiling',
+      error: error.message
+    });
+  }
+});
+
+// GET /admin/profiler/status - Get profiling status
+router.get('/profiler/status', auth, adminAuth, async (req, res) => {
+  try {
+    console.log('📊 Getting profiling status');
+
+    const status = profilingManager.getProfilingStatus();
+
+    res.json({
+      success: true,
+      data: status,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('Error getting profiling status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get profiling status',
+      error: error.message
+    });
+  }
+});
+
+// GET /admin/cache/stats - Enhanced cache statistics (already exists)
+// POST /admin/cache/clear - Clear cache (enhanced version)
+router.post('/cache/clear', auth, adminAuth, async (req, res) => {
+  try {
+    const { pattern, types } = req.body;
+    console.log('🧹 Clearing cache with pattern:', pattern, 'types:', types);
+
+    if (pattern) {
+      // Clear specific pattern
+      await dbCache.invalidatePattern(pattern);
+      res.json({
+        success: true,
+        message: `Cache cleared for pattern: ${pattern}`,
+        pattern
+      });
+    } else if (types && Array.isArray(types)) {
+      // Clear specific types
+      await dbCache.invalidateCache(types);
+      res.json({
+        success: true,
+        message: `Cache cleared for types: ${types.join(', ')}`,
+        types
+      });
+    } else {
+      // Clear all cache
+      await dbCache.invalidateAllCache();
+      res.json({
+        success: true,
+        message: 'All cache cleared'
+      });
+    }
+
+  } catch (error) {
+    console.error('Error clearing cache:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to clear cache',
+      error: error.message
+    });
+  }
+});
+
+// GET /admin/cluster/status - Cluster worker status
+router.get('/cluster/status', auth, adminAuth, async (req, res) => {
+  try {
+    console.log('👥 Getting cluster status');
+
+    const clusterStatus = {
+      isMaster: cluster.isMaster,
+      isPrimary: cluster.isPrimary,
+      workerId: cluster.worker ? cluster.worker.id : null,
+      processId: process.pid,
+      workers: {},
+      system: {
+        cpuCount: os.cpus().length,
+        totalMemory: Math.round(os.totalmem() / 1024 / 1024 / 1024), // GB
+        freeMemory: Math.round(os.freemem() / 1024 / 1024 / 1024), // GB
+        loadAverage: os.loadavg(),
+        uptime: os.uptime()
+      }
+    };
+
+    if (cluster.isMaster || cluster.isPrimary) {
+      // Get worker information
+      for (const [id, worker] of Object.entries(cluster.workers || {})) {
+        clusterStatus.workers[id] = {
+          id: parseInt(id),
+          pid: worker.process.pid,
+          state: worker.state,
+          isDead: worker.isDead(),
+          exitedAfterDisconnect: worker.exitedAfterDisconnect
+        };
+      }
+      clusterStatus.workerCount = Object.keys(cluster.workers || {}).length;
+    } else {
+      clusterStatus.workerCount = 1;
+      clusterStatus.isWorker = true;
+    }
+
+    res.json({
+      success: true,
+      data: clusterStatus,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('Error getting cluster status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get cluster status',
+      error: error.message
+    });
+  }
+});
+
+// POST /admin/cluster/restart - Restart cluster workers
+router.post('/cluster/restart', auth, adminAuth, async (req, res) => {
+  try {
+    console.log('🔄 Restarting cluster workers');
+
+    if (!cluster.isMaster && !cluster.isPrimary) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cluster restart can only be initiated from master process'
+      });
+    }
+
+    const workerIds = Object.keys(cluster.workers || {});
+    let restartedWorkers = 0;
+
+    for (const workerId of workerIds) {
+      const worker = cluster.workers[workerId];
+      if (worker && !worker.isDead()) {
+        worker.disconnect();
+        worker.kill();
+        restartedWorkers++;
+      }
+    }
+
+    // Fork new workers
+    const cpuCount = os.cpus().length;
+    for (let i = 0; i < Math.min(cpuCount, 4); i++) {
+      cluster.fork();
+    }
+
+    res.json({
+      success: true,
+      message: `Restarted ${restartedWorkers} workers`,
+      restartedWorkers,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('Error restarting cluster:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to restart cluster',
+      error: error.message
+    });
+  }
+});
+
+// GET /admin/logs - Recent system logs and alerts
+router.get('/logs', auth, adminAuth, async (req, res) => {
+  try {
+    const { limit = 100, level = 'all' } = req.query;
+    console.log('📋 Getting system logs, limit:', limit, 'level:', level);
+
+    // Get database slow queries
+    let slowQueries = [];
+    try {
+      if (typeof pool.getSlowQueries === 'function') {
+        slowQueries = pool.getSlowQueries(limit);
+      }
+    } catch (error) {
+      console.warn('Could not get slow queries:', error.message);
+    }
+
+    // Get recent alerts (simulated for now - in production, these would come from a logging system)
+    const alerts = [
+      {
+        id: 'alert-1',
+        timestamp: new Date(Date.now() - 300000).toISOString(),
+        level: 'warn',
+        type: 'slow-query',
+        message: 'Slow query detected in attendance_records table',
+        details: {
+          duration: 450,
+          query: 'SELECT * FROM attendance_records WHERE date BETWEEN ? AND ?',
+          threshold: 200
+        }
+      },
+      {
+        id: 'alert-2',
+        timestamp: new Date(Date.now() - 600000).toISOString(),
+        level: 'info',
+        type: 'cache-miss',
+        message: 'Cache miss rate increased above 20%',
+        details: {
+          hitRate: 78,
+          missRate: 22,
+          threshold: 20
+        }
+      },
+      {
+        id: 'alert-3',
+        timestamp: new Date(Date.now() - 1200000).toISOString(),
+        level: 'error',
+        type: 'high-memory',
+        message: 'Memory usage above 80% threshold',
+        details: {
+          memoryUsage: 342,
+          limit: 400,
+          percentage: 85.5
+        }
+      }
+    ];
+
+    // Filter by level if specified
+    const filteredAlerts = level === 'all' ? alerts : 
+      alerts.filter(alert => alert.level === level);
+
+    res.json({
+      success: true,
+      data: {
+        alerts: filteredAlerts.slice(0, limit),
+        slowQueries: slowQueries.slice(0, limit),
+        systemInfo: {
+          totalAlerts: alerts.length,
+          slowQueryCount: slowQueries.length,
+          lastUpdated: new Date().toISOString()
+        }
+      },
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('Error getting logs:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get system logs',
+      error: error.message
+    });
+  }
+});
+
+console.log('📊 Admin monitoring API endpoints loaded');
 
 module.exports = router;

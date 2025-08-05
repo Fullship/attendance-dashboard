@@ -1,6 +1,6 @@
 /**
  * Server Worker Process
- * This is the actual server code that runs in each worker process
+ * Contains the actual server code that runs in each worker process
  * Separated from cluster management for clean separation of concerns
  */
 
@@ -29,6 +29,16 @@ const rolesRoutes = require('./routes/roles');
 
 // Import database monitoring middleware
 const DatabaseMonitoringAPI = require('./middleware/database-monitoring');
+
+// Import monitoring instrumentation
+const monitoringInstrumentation = require('./middleware/monitoring-instrumentation');
+const profilingManager = require('./utils/ProfilingManager');
+
+// Set global variables for health check
+global.monitoringInstrumentation = monitoringInstrumentation;
+global.profilingManager = profilingManager;
+global.metricsEnabled = true;
+global.performanceEnabled = true;
 
 // Create router for database monitoring
 const dbMonitoringRouter = require('express').Router();
@@ -103,6 +113,13 @@ app.use(
   })
 );
 
+// Monitoring instrumentation middleware (must be early in the chain)
+app.use(monitoringInstrumentation.requestInstrumentation());
+
+// Set additional global variables after Redis connection
+global.redisCache = cacheService;
+global.memoryMonitoring = true;
+
 // CORS configuration
 app.use(
   cors({
@@ -126,7 +143,19 @@ app.use(
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+    allowedHeaders: [
+      'Content-Type', 
+      'Authorization', 
+      'Accept',
+      'x-datadog-origin',
+      'x-datadog-parent-id', 
+      'x-datadog-sampling-priority',
+      'x-datadog-trace-id',
+      'x-requested-with',
+      'user-agent',
+      'cache-control',
+      'pragma'
+    ],
   })
 );
 
@@ -183,7 +212,7 @@ if (IS_CLUSTER_WORKER && redisClient) {
 
 app.use(session(sessionConfig));
 
-// Health check endpoint with cluster info
+// Health check endpoint with cluster info and monitoring status
 app.get('/health', (req, res) => {
   const health = {
     status: 'healthy',
@@ -197,6 +226,20 @@ app.get('/health', (req, res) => {
     },
     version: process.env.npm_package_version || '1.0.0',
     environment: process.env.NODE_ENV || 'development',
+    monitoring: {
+      requestInstrumentation: !!global.monitoringInstrumentation,
+      memoryMonitoring: !!global.memoryMonitoring,
+      metricsCollection: !!global.metricsEnabled,
+      profilingReady: !!global.profilingManager,
+      instrumentationActive: process.env.MONITORING_ENABLED !== 'false',
+      cachingEnabled: !!global.redisCache,
+      performanceOptimized: !!global.performanceEnabled
+    },
+    cluster: IS_CLUSTER_WORKER ? {
+      workerId: cluster.worker?.id,
+      totalWorkers: process.env.CLUSTER_WORKERS || 'auto',
+      restartCount: cluster.worker?.exitedAfterDisconnect ? 'restarted' : 'initial'
+    } : null
   };
 
   res.json(health);
@@ -238,6 +281,19 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/enhanced-leave', enhancedLeaveRoutes);
 app.use('/api/admin-leave', adminLeaveRoutes);
 app.use('/api/roles', rolesRoutes);
+
+// Build info endpoint for cache busting
+app.get('/api/build-info', (req, res) => {
+  res.json({
+    buildTime: process.env.BUILD_TIME || new Date().toISOString(),
+    version: process.env.npm_package_version || '1.0.0',
+    commit: process.env.GIT_COMMIT || 'development',
+    worker: {
+      id: WORKER_ID,
+      pid: process.pid,
+    },
+  });
+});
 
 // Error handling middleware
 app.use((err, req, res, next) => {

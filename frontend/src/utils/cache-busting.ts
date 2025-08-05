@@ -71,8 +71,11 @@ export const checkForAppUpdate = async () => {
   const buildInfo = getBuildInfo();
 
   try {
+    // Get API base URL (same as used in api.ts)
+    const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3002/api';
+    
     // Fetch current build info from server
-    const response = await fetch('/api/build-info', {
+    const response = await fetch(`${API_BASE_URL}/build-info`, {
       cache: 'no-cache',
       headers: {
         'Cache-Control': 'no-cache',

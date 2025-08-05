@@ -25,6 +25,9 @@ const {
 // Import custom instrumentation
 const instrumentation = require('./middleware/instrumentation');
 
+// Import comprehensive monitoring instrumentation
+const monitoringInstrumentation = require('./middleware/monitoring-instrumentation');
+
 // Import Redis configuration
 const { redis: redisClient, cacheService } = require('./config/redis');
 
@@ -175,6 +178,9 @@ if (process.env.NODE_ENV === 'development') {
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Comprehensive monitoring instrumentation
+app.use(monitoringInstrumentation.requestInstrumentation());
+
 // Add a middleware to ensure proper headers for compression
 app.use((req, res, next) => {
   const origin = req.headers.origin;
@@ -303,20 +309,29 @@ if (process.env.NODE_ENV === 'development' || process.env.SERVE_STATIC === 'true
   });
 }
 
-// Health check endpoint with Redis status
+// Health check endpoint with comprehensive monitoring
 app.get('/api/health', async (req, res) => {
   try {
     // Check Redis connection
     const redisStatus = await cacheService.ping();
     const dbConnected = true; // You can add database check here
 
+    // Get monitoring health status
+    const monitoringHealth = monitoringInstrumentation.getHealthStatus();
+
     res.json({
-      status: 'OK',
+      status: monitoringHealth.status,
       timestamp: new Date().toISOString(),
       services: {
         redis: redisStatus ? 'connected' : 'disconnected',
         database: dbConnected ? 'connected' : 'disconnected',
       },
+      monitoring: monitoringHealth,
+      uptime: process.uptime(),
+      workers: {
+        active: cluster.isMaster ? Object.keys(cluster.workers || {}).length : 1,
+        total: cluster.isMaster ? Object.keys(cluster.workers || {}).length : 1
+      }
     });
   } catch (error) {
     console.error('Health check failed:', error);

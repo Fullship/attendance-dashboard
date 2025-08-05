@@ -91,9 +91,18 @@ router.post('/login', [
     }
 
     const user = result.rows[0];
+    
+    // Debug logging
+    console.log('=== AUTH DEBUG ===');
+    console.log('User query result rows:', result.rows.length);
+    console.log('Full user object:', JSON.stringify(user, null, 2));
+    console.log('password_hash exists?', user.password_hash !== undefined);
+    console.log('password_hash value:', user.password_hash);
+    console.log('Input password:', password);
+    console.log('==================');
 
     // Check password
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
