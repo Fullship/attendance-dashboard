@@ -10,6 +10,7 @@ import {
   CalendarDaysIcon,
   ListBulletIcon,
   BuildingOfficeIcon,
+  ChartBarIcon,
 } from '@heroicons/react/24/outline';
 
 interface MenuItem {
@@ -63,6 +64,11 @@ const Sidebar: React.FC<SidebarProps> = ({
           count: pendingLeaveRequests,
         },
       ],
+    },
+    {
+      id: 'monitoring',
+      label: 'System Monitoring',
+      icon: ChartBarIcon,
     },
     {
       id: 'settings',

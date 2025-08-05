@@ -16,6 +16,7 @@ import EmployeeDetailsModal from '../components/EmployeeDetailsModal';
 import AdminSettings from '../components/AdminSettings';
 import { NumberTicker, MagicCard, FadeInStagger } from '../components/ui';
 import { ReactPerformanceProfiler } from '../utils/ReactPerformanceProfiler';
+import DashboardMonitoring from '../components/DashboardMonitoring';
 import {
   LeaveRequestsManagementWithSuspense,
   ReactFlowOrganizationalChartWithSuspense,
@@ -45,6 +46,7 @@ const AdminDashboard: React.FC = () => {
     | 'leave-requests'
     | 'org-chart'
     | 'settings'
+    | 'monitoring'
   >('overview');
 
   // Attendance records state
@@ -2401,6 +2403,8 @@ Status Breakdown:
         return <ReactFlowOrganizationalChartWithSuspense />;
       case 'settings':
         return <AdminSettings />;
+      case 'monitoring':
+        return <DashboardMonitoring />;
       default:
         return renderOverview();
     }
