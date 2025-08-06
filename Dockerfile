@@ -1,7 +1,7 @@
 # Simple working Dockerfile for Coolify deployment
 FROM node:18-alpine
 
-# Install necessary packages including openssl for frontend build
+# Install necessary packages
 RUN apk add --no-cache curl dumb-init openssl
 
 # Create app user
@@ -17,7 +17,7 @@ RUN cd backend && npm ci --only=production
 # Copy backend source
 COPY backend/ ./backend/
 
-# Copy and install frontend dependencies  
+# Copy and install frontend dependencies
 COPY frontend/package*.json ./frontend/
 RUN cd frontend && npm ci
 
@@ -29,6 +29,10 @@ RUN cd frontend && \
     REACT_APP_BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ) \
     REACT_APP_BUILD_HASH=coolify-$(date +%s) \
     npm run build
+
+# Copy built frontend to backend public folder
+# Note: Backend expects frontend build at ../frontend/build relative to backend directory
+# Since we're already in /app, the structure /app/frontend/build works correctly
 
 # Change ownership
 RUN chown -R app:nodejs /app
