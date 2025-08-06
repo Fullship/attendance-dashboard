@@ -1,8 +1,8 @@
 # Simple working Dockerfile for Coolify deployment
 FROM node:18-alpine
 
-# Install necessary packages including openssl for frontend build
-RUN apk add --no-cache curl dumb-init openssl
+# Install necessary packages
+RUN apk add --no-cache curl dumb-init
 
 # Create app user
 RUN addgroup -g 1001 -S nodejs && adduser -S app -u 1001
@@ -17,18 +17,16 @@ RUN cd backend && npm ci --only=production
 # Copy backend source
 COPY backend/ ./backend/
 
-# Copy and install frontend dependencies  
+# Copy and install frontend dependencies
 COPY frontend/package*.json ./frontend/
 RUN cd frontend && npm ci
 
 # Copy frontend source and build
 COPY frontend/ ./frontend/
-RUN cd frontend && \
-    NODE_ENV=production \
-    GENERATE_SOURCEMAP=false \
-    REACT_APP_BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ) \
-    REACT_APP_BUILD_HASH=coolify-$(date +%s) \
-    npm run build
+RUN cd frontend && npm run build
+
+# Copy built frontend to backend public folder
+RUN cp -r frontend/build/* backend/public/ 2>/dev/null || mkdir -p backend/public && cp -r frontend/build/* backend/public/
 
 # Change ownership
 RUN chown -R app:nodejs /app
@@ -44,7 +42,6 @@ ENV NODE_ENV=production
 ENV PORT=3002
 ENV ENABLE_CLUSTERING=false
 ENV MAX_WORKERS=1
-ENV SERVE_STATIC=true
 
 # Expose port
 EXPOSE 3002
