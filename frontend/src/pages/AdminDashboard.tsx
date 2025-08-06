@@ -22,6 +22,7 @@ import {
   ReactFlowOrganizationalChartWithSuspense,
   TeamManagerWithSuspense,
   LocationManagerWithSuspense,
+  CareersPageWithSuspense,
 } from '../components/LazyComponents';
 import { ComponentLoadingFallback } from '../components/LazyLoadingFallback';
 import VirtualizedTable, {
@@ -47,6 +48,7 @@ const AdminDashboard: React.FC = () => {
     | 'org-chart'
     | 'settings'
     | 'monitoring'
+    | 'careers'
   >('overview');
 
   // Attendance records state
@@ -2401,6 +2403,8 @@ Status Breakdown:
         return <LeaveRequestsManagementWithSuspense />;
       case 'org-chart':
         return <ReactFlowOrganizationalChartWithSuspense />;
+      case 'careers':
+        return <CareersPageWithSuspense />;
       case 'settings':
         return <AdminSettings />;
       case 'monitoring':

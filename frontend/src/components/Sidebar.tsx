@@ -11,6 +11,7 @@ import {
   ListBulletIcon,
   BuildingOfficeIcon,
   ChartBarIcon,
+  BriefcaseIcon,
 } from '@heroicons/react/24/outline';
 
 interface MenuItem {
@@ -64,6 +65,11 @@ const Sidebar: React.FC<SidebarProps> = ({
           count: pendingLeaveRequests,
         },
       ],
+    },
+    {
+      id: 'careers',
+      label: 'Careers',
+      icon: BriefcaseIcon,
     },
     {
       id: 'monitoring',

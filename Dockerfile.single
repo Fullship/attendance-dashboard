@@ -1,0 +1,66 @@
+# Alternative: Single Dockerfile for the entire application
+# This builds both frontend and backend in a single container
+
+FROM node:18-alpine AS frontend-builder
+
+# Build frontend
+WORKDIR /app/frontend
+COPY frontend/package*.json ./
+RUN npm ci --only=production
+COPY frontend/ ./
+RUN npm run build
+
+FROM node:18-alpine AS backend-builder
+
+# Build backend
+WORKDIR /app/backend
+COPY backend/package*.json ./
+RUN npm ci --only=production
+COPY backend/ ./
+
+FROM node:18-alpine AS production
+
+# Install dumb-init and nginx
+RUN apk add --no-cache dumb-init nginx
+
+# Create app directory
+WORKDIR /app
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S appuser -u 1001
+
+# Copy backend
+COPY --from=backend-builder /app/backend ./backend
+WORKDIR /app/backend
+
+# Copy frontend build to nginx directory
+COPY --from=frontend-builder /app/frontend/build /usr/share/nginx/html
+
+# Copy nginx configuration
+COPY frontend/nginx.conf /etc/nginx/nginx.conf
+
+# Create startup script
+RUN echo '#!/bin/sh' > /app/start.sh && \
+    echo 'nginx &' >> /app/start.sh && \
+    echo 'cd /app/backend && node cluster-server.js' >> /app/start.sh && \
+    chmod +x /app/start.sh
+
+# Change ownership
+RUN chown -R appuser:nodejs /app
+RUN chown -R appuser:nodejs /usr/share/nginx/html
+RUN chown -R appuser:nodejs /var/log/nginx
+RUN chown -R appuser:nodejs /var/cache/nginx
+
+USER appuser
+
+# Expose ports
+EXPOSE 80 3002
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost/health || exit 1
+
+# Start both services
+ENTRYPOINT ["dumb-init", "--"]
+CMD ["/app/start.sh"]

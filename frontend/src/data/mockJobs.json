@@ -1,0 +1,138 @@
+[
+  {
+    "id": "1",
+    "title": "Senior Software Engineer",
+    "department": "Engineering",
+    "location": "Remote / San Francisco",
+    "type": "Full-time",
+    "description": "Join our engineering team to build scalable workforce management solutions. You'll work on our core platform, implementing new features and optimizing performance for millions of users.",
+    "requirements": [
+      "5+ years of software development experience",
+      "Proficiency in React, TypeScript, and Node.js",
+      "Experience with cloud platforms (AWS, GCP, or Azure)",
+      "Strong understanding of database design and optimization",
+      "Experience with microservices architecture"
+    ],
+    "postedDate": "2025-07-15",
+    "salary": "$140,000 - $180,000"
+  },
+  {
+    "id": "2",
+    "title": "Product Manager",
+    "department": "Product",
+    "location": "Remote / New York",
+    "type": "Full-time",
+    "description": "Lead product strategy and roadmap for our attendance management platform. Work closely with engineering, design, and customer success teams to deliver exceptional user experiences.",
+    "requirements": [
+      "3+ years of product management experience in B2B SaaS",
+      "Strong analytical and data-driven decision making skills",
+      "Experience with user research and product discovery",
+      "Excellent communication and stakeholder management skills",
+      "Technical background preferred"
+    ],
+    "postedDate": "2025-07-10",
+    "salary": "$120,000 - $160,000"
+  },
+  {
+    "id": "3",
+    "title": "UX/UI Designer",
+    "department": "Design",
+    "location": "Remote",
+    "type": "Full-time",
+    "description": "Design intuitive and delightful user experiences for our workforce management platform. Collaborate with product and engineering teams to create user-centered solutions.",
+    "requirements": [
+      "3+ years of UX/UI design experience",
+      "Proficiency in Figma, Sketch, or similar design tools",
+      "Strong portfolio showcasing interaction design",
+      "Experience with design systems and component libraries",
+      "Understanding of web accessibility standards"
+    ],
+    "postedDate": "2025-07-08",
+    "salary": "$100,000 - $140,000"
+  },
+  {
+    "id": "4",
+    "title": "DevOps Engineer",
+    "department": "Infrastructure",
+    "location": "Remote / Austin",
+    "type": "Full-time",
+    "description": "Build and maintain our cloud infrastructure to ensure high availability and scalability. Implement CI/CD pipelines and monitoring solutions.",
+    "requirements": [
+      "4+ years of DevOps or infrastructure experience",
+      "Strong experience with AWS or similar cloud platforms",
+      "Proficiency in Docker, Kubernetes, and infrastructure as code",
+      "Experience with monitoring and logging tools",
+      "Knowledge of security best practices"
+    ],
+    "postedDate": "2025-07-05",
+    "salary": "$130,000 - $170,000"
+  },
+  {
+    "id": "5",
+    "title": "Customer Success Manager",
+    "department": "Customer Success",
+    "location": "Remote / Chicago",
+    "type": "Full-time",
+    "description": "Help our customers achieve success with our platform. Build relationships, drive adoption, and ensure customer satisfaction and retention.",
+    "requirements": [
+      "2+ years of customer success or account management experience",
+      "Strong communication and relationship building skills",
+      "Experience with SaaS platforms and customer onboarding",
+      "Data-driven approach to measuring customer health",
+      "Problem-solving mindset and empathy for customer needs"
+    ],
+    "postedDate": "2025-07-01",
+    "salary": "$80,000 - $110,000"
+  },
+  {
+    "id": "6",
+    "title": "Data Scientist",
+    "department": "Data",
+    "location": "Remote / Seattle",
+    "type": "Full-time",
+    "description": "Analyze workforce data to generate insights and build predictive models. Help customers optimize their workforce management strategies through data-driven recommendations.",
+    "requirements": [
+      "3+ years of data science experience",
+      "Proficiency in Python, R, or similar data analysis tools",
+      "Experience with machine learning and statistical modeling",
+      "Strong SQL skills and database experience",
+      "Ability to communicate complex findings to non-technical stakeholders"
+    ],
+    "postedDate": "2025-06-28",
+    "salary": "$110,000 - $150,000"
+  },
+  {
+    "id": "7",
+    "title": "Frontend Engineer",
+    "department": "Engineering",
+    "location": "Remote",
+    "type": "Full-time",
+    "description": "Build beautiful and performant user interfaces for our web applications. Work with our design team to implement pixel-perfect designs and smooth user interactions.",
+    "requirements": [
+      "3+ years of frontend development experience",
+      "Expert knowledge of React, TypeScript, and modern CSS",
+      "Experience with responsive design and mobile optimization",
+      "Understanding of web performance optimization",
+      "Familiarity with testing frameworks and best practices"
+    ],
+    "postedDate": "2025-06-25",
+    "salary": "$110,000 - $150,000"
+  },
+  {
+    "id": "8",
+    "title": "Sales Development Representative",
+    "department": "Sales",
+    "location": "Remote / Boston",
+    "type": "Full-time",
+    "description": "Generate qualified leads and support our sales team in growing our customer base. Research prospects, conduct outreach, and schedule demos.",
+    "requirements": [
+      "1-2 years of sales or business development experience",
+      "Strong communication and interpersonal skills",
+      "Experience with CRM systems (Salesforce, HubSpot, etc.)",
+      "Goal-oriented with a track record of meeting targets",
+      "Interest in technology and SaaS solutions"
+    ],
+    "postedDate": "2025-06-20",
+    "salary": "$60,000 - $80,000 + commission"
+  }
+]

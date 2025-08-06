@@ -8,21 +8,36 @@ interface AppUpdateCheckerProps {
 }
 
 export const AppUpdateChecker: React.FC<AppUpdateCheckerProps> = ({
-  checkInterval = 5 * 60 * 1000, // 5 minutes default
+  checkInterval = 60 * 60 * 1000, // 1 hour default (instead of 5 minutes)
   autoCheck = true,
 }) => {
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [updateInfo, setUpdateInfo] = useState<any>(null);
   const [isChecking, setIsChecking] = useState(false);
+  const [lastCheckTime, setLastCheckTime] = useState(0);
 
   const checkForUpdates = async () => {
     if (isChecking) return;
 
+    // Debounce: Don't check more than once every 10 minutes
+    const now = Date.now();
+    if (now - lastCheckTime < 10 * 60 * 1000) {
+      return;
+    }
+
     setIsChecking(true);
+    setLastCheckTime(now);
+    
     try {
       const updateResult = await checkForAppUpdate();
 
       if (updateResult.updateAvailable) {
+        // Check if we've already dismissed this version
+        const dismissedVersion = localStorage.getItem('dismissed_app_version');
+        if (dismissedVersion === updateResult.newVersion) {
+          return;
+        }
+
         setUpdateAvailable(true);
         setUpdateInfo(updateResult);
 
@@ -43,6 +58,8 @@ export const AppUpdateChecker: React.FC<AppUpdateCheckerProps> = ({
     toast.loading('Updating app...', { id: 'update-toast' });
 
     try {
+      // Clear dismissed version before updating
+      localStorage.removeItem('dismissed_app_version');
       await forceAppRefresh();
     } catch (error) {
       toast.error('Failed to update app. Please refresh manually.', { id: 'update-toast' });
@@ -50,6 +67,10 @@ export const AppUpdateChecker: React.FC<AppUpdateCheckerProps> = ({
   };
 
   const dismissUpdate = () => {
+    // Store the dismissed version so we don't show it again
+    if (updateInfo?.newVersion) {
+      localStorage.setItem('dismissed_app_version', updateInfo.newVersion);
+    }
     setUpdateAvailable(false);
     setUpdateInfo(null);
   };
@@ -57,22 +78,38 @@ export const AppUpdateChecker: React.FC<AppUpdateCheckerProps> = ({
   useEffect(() => {
     if (!autoCheck) return;
 
-    // Initial check after 10 seconds
-    const initialTimer = setTimeout(checkForUpdates, 10000);
+    // Initial check after 2 minutes (give time for app to load)
+    const initialTimer = setTimeout(checkForUpdates, 2 * 60 * 1000);
 
     // Periodic checks
     const intervalTimer = setInterval(checkForUpdates, checkInterval);
 
-    // Check on window focus
+    // Check on window focus, but debounced
+    let focusCheckTimeout: NodeJS.Timeout;
     const handleFocus = () => {
-      checkForUpdates();
+      clearTimeout(focusCheckTimeout);
+      focusCheckTimeout = setTimeout(checkForUpdates, 30000); // 30 second delay after focus
     };
     window.addEventListener('focus', handleFocus);
+
+    // Expose methods for debugging (development only)
+    if (process.env.NODE_ENV === 'development') {
+      (window as any).appUpdateChecker = {
+        forceCheck: checkForUpdates,
+        clearDismissed: () => localStorage.removeItem('dismissed_app_version'),
+        getDismissed: () => localStorage.getItem('dismissed_app_version'),
+      };
+    }
 
     return () => {
       clearTimeout(initialTimer);
       clearInterval(intervalTimer);
+      clearTimeout(focusCheckTimeout);
       window.removeEventListener('focus', handleFocus);
+      
+      if (process.env.NODE_ENV === 'development') {
+        delete (window as any).appUpdateChecker;
+      }
     };
   }, [checkInterval, autoCheck]);
 

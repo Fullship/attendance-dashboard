@@ -20,6 +20,7 @@ import {
   EmployeeDetailsPageWithSuspense,
   PerformanceDashboardWithSuspense,
   LazyLoadingDemoWithSuspense,
+  CareersPageWithSuspense,
   usePreloadComponents,
 } from './components/LazyComponents';
 import { DashboardLoadingFallback } from './components/LazyLoadingFallback';
@@ -192,6 +193,18 @@ const AppContent: React.FC = () => {
               }
             />
 
+            {/* Careers Page - Can be accessed by both admin and employees */}
+            <Route
+              path="/careers"
+              element={
+                <ProtectedRoute>
+                  <ReactPerformanceProfiler id="CareersPage" threshold={200}>
+                    <CareersPageWithSuspense />
+                  </ReactPerformanceProfiler>
+                </ProtectedRoute>
+              }
+            />
+
             {/* Default Route */}
             <Route path="/" element={<Navigate to="/login" replace />} />
 
@@ -236,7 +249,19 @@ function App() {
                 <ReactPerformanceProfiler id="SocketProvider" threshold={200}>
                   <Router>
                     <AppContent />
-                    <AppUpdateChecker />
+                    {/* 
+                      App Update Checker Configuration:
+                      - REACT_APP_DISABLE_UPDATE_CHECKER=true to disable completely
+                      - Only auto-checks in production mode
+                      - Checks every 4 hours in production
+                      - Development mode: Use window.appUpdateChecker.forceCheck() to test
+                    */}
+                    {process.env.REACT_APP_DISABLE_UPDATE_CHECKER !== 'true' && (
+                      <AppUpdateChecker 
+                        checkInterval={4 * 60 * 60 * 1000} // Check every 4 hours
+                        autoCheck={process.env.NODE_ENV === 'production'} // Only auto-check in production
+                      />
+                    )}
                   </Router>
                 </ReactPerformanceProfiler>
               </SocketProvider>

@@ -84,6 +84,15 @@ export const LazyEmployeeDetailsPage = React.lazy(() =>
     })
 );
 
+export const LazyCareersPage = React.lazy(() =>
+  import('../pages/CareersPage')
+    .then(module => ({ default: module.default }))
+    .catch(error => {
+      console.error('Failed to load CareersPage:', error);
+      throw error;
+    })
+);
+
 // Component Pages
 export const LazyReactFlowOrganizationalChart = React.lazy(() =>
   import('../components/ReactFlowOrganizationalChart')
@@ -182,6 +191,11 @@ export const LazyLoadingDemoWithSuspense = withLazyLoading(LazyLoadingDemo, {
 export const EmployeeDetailsPageWithSuspense = withLazyLoading(LazyEmployeeDetailsPage, {
   fallback: <DashboardLoadingFallback />,
   componentName: 'EmployeeDetailsPage',
+});
+
+export const CareersPageWithSuspense = withLazyLoading(LazyCareersPage, {
+  fallback: <DashboardLoadingFallback />,
+  componentName: 'CareersPage',
 });
 
 export const ReactFlowOrganizationalChartWithSuspense = withLazyLoading(

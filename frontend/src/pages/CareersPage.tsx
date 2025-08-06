@@ -1,75 +1,162 @@
 /**
  * @file CareersPage.tsx
- * @description
- *
- * — GitHub Copilot Prompt Start —
- * 
- *  Goal:
- *   Build a modern, accessible, mobile‑responsive career page in React (or Next.js)
- *   with the following sections and features:
- *
- * Technology & Architecture:
- *   • Use Functional React components with Hooks (JavaScript or TypeScript).
- *   • If on Next.js: export as `export default function CareersPage()` and
- *     include `<Head>` tags for SEO/OG.
- *   • Use a component-based structure: e.g. Hero, CompanyIntro, JobList,
- *     Filters, Testimonials, Benefits, FAQs, ApplicationForm, Footer.
- *   • Use base CSS Modules or styled-components (feel free to scaffold both).
- *   • All visual assets should be structured for lazy loading
- *     (`next/image` or `<img loading="lazy">`).
- *
- * Sections & Features:
- *   1. Hero Banner
- *      • Headline and sub‑text introducing your mission or EVP (employee value proposition).
- *      • Background image of workplace/team.
- *      • CTA buttons: “See Open Roles” and “Join Talent Network”.
- *   2. Company Introduction (About Us / Culture)
- *      • Mission, vision, and values in concise paragraphs or bullets.
- *      • Brief “Our Culture” rows (e.g. small cards or icons).
- *   3. Employee Testimonials / Video Spotlight
- *      • Quote blocks or video spotlights (“A week in the life at Company”).
- *      • Provide props for name, role, photo, quote, or video embed.
- *   4. Benefits & Perks
- *      • List key benefits (e.g. flexibility, training, healthcare, equity).
- *      • Show interactive/toggle cards or icons.
- *   5. Job Listings Section
- *      • Fetch open roles via `jobs.json` or REST API.
- *      • Display in a paginated table or cards: title, department, location, type.
- *      • Add filters: department, location, job type.
- *   6. Apply Now Form Component
- *      • Fields: Name *, Email *, Resume upload (PDF), Cover letter, Location.
- *      • Client‑side validation: required fields, email format, file size/type.
- *      • After submit: show inline confirmation and reset form.
- *   7. FAQ Section About Hiring Process
- *      • Collapsible Q&A items about “How we hire”, remote roles, equal opportunity.
- *   8. SEO & Social Sharing
- *      • Automatically insert `<meta>` tags for page title, description, OG:image,
- *        Twitter card.
- *      • Content should include structured data (JSON‑LD for JobPosting, Organization).
- *   9. Accessibility
- *      • Keyboard focus states, ARIA roles, skip‑nav link.
- *      • High contrast text, WCAG‑compliant fonts and colors.
- *  10. Analytics Hooks
- *      • Add optional Google Tag, Mixpanel, or Matomo event hook at “Apply Now” click.
- *
- * UI / Visual Guidance:
- *   • Use clean, modular headlined sections.
- *   • Keep the layout responsive with flex/grid and appropriate breakpoints.
- *   • Allow easy customization of theme via CSS variables or theme file.
- *
- * Testing (optional / when cod ed):
- *   • Provide Jest or React Testing Library tests for:
- *     — JobList renders mock roles.
- *     — Filters update list.
- *     — Form validation error message appears when missing input.
- *
- * Additional Notes for Copilot:
- *   • Generate each component in its own file in `components/`.
- *   • Provide Prop Interface/Icon and `export default`.
- *   • After the initial scaffold, ask: “Now add real data mocks, style with Tailwind or Material UI,” etc.
- *
- * — GitHub Copilot Prompt End —
+ * @description Modern, accessible, mobile-responsive career page with comprehensive sections
  */
 
-// This is a placeholder careers page documentation file
-export {};
+import React, { useState, useEffect } from 'react';
+// Using custom hook for document head management (React 19 compatible)
+import { useDocumentHead } from '../hooks/useDocumentHead';
+import { Job } from '../components/careers/types';
+import HeroBanner from '../components/careers/HeroBanner';
+import CompanyIntroduction from '../components/careers/CompanyIntroduction';
+import EmployeeTestimonials from '../components/careers/EmployeeTestimonials';
+import BenefitsPerks from '../components/careers/BenefitsPerks';
+import JobListings from '../components/careers/JobListings';
+import ApplicationForm from '../components/careers/ApplicationForm';
+import FAQSection from '../components/careers/FAQSection';
+import CareersFooter from '../components/careers/CareersFooter';
+import SkipNavLink from '../components/careers/SkipNavLink';
+import './CareersPage.css';
+
+const CareersPage: React.FC = () => {
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  // Detect user's color scheme preference
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    setIsDarkMode(mediaQuery.matches);
+
+    const handleChange = (e: MediaQueryListEvent) => {
+      setIsDarkMode(e.matches);
+    };
+
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
+
+  useEffect(() => {
+    // Fetch jobs data
+    const fetchJobs = async () => {
+      try {
+        // In a real app, this would be an API call
+        const response = await fetch('/api/jobs');
+        if (response.ok) {
+          const jobsData = await response.json();
+          setJobs(jobsData);
+        } else {
+          // Fallback to mock data
+          const mockJobs = await import('../data/mockJobs.json');
+          setJobs(mockJobs.default);
+        }
+      } catch (error) {
+        console.error('Error fetching jobs:', error);
+        // Load mock data as fallback
+        const mockJobs = await import('../data/mockJobs.json');
+        setJobs(mockJobs.default);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchJobs();
+  }, []);
+
+  // Analytics event tracking
+  const trackEvent = (eventName: string, properties?: Record<string, any>) => {
+    // Google Analytics 4
+    if (typeof window !== 'undefined' && (window as any).gtag) {
+      (window as any).gtag('event', eventName, properties);
+    }
+    
+    // Mixpanel
+    if (typeof window !== 'undefined' && (window as any).mixpanel) {
+      (window as any).mixpanel.track(eventName, properties);
+    }
+  };
+
+  const handleApplyNowClick = (jobId?: string) => {
+    trackEvent('careers_apply_now_clicked', {
+      job_id: jobId,
+      page: 'careers',
+      timestamp: new Date().toISOString()
+    });
+  };
+
+  // Structured data for SEO
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "Fullship Attendance Dashboard",
+    "description": "Leading employee attendance management solutions",
+    "url": "https://fullship.com",
+    "logo": "https://fullship.com/logo.png",
+    "jobPosting": jobs.map(job => ({
+      "@type": "JobPosting",
+      "title": job.title,
+      "description": job.description,
+      "hiringOrganization": {
+        "@type": "Organization",
+        "name": "Fullship"
+      },
+      "jobLocation": {
+        "@type": "Place",
+        "name": job.location
+      },
+      "employmentType": job.type,
+      "datePosted": job.postedDate
+    }))
+  };
+
+  // Use custom hook for document head management
+  useDocumentHead({
+    title: "Careers - Join Our Team | Fullship",
+    description: "Discover exciting career opportunities at Fullship. Build innovative attendance management solutions with a passionate team. Remote-friendly, competitive benefits, and growth opportunities.",
+    keywords: "careers, jobs, software engineer, product manager, design, remote work, tech jobs",
+    ogTitle: "Careers - Join Our Team | Fullship",
+    ogDescription: "Discover exciting career opportunities at Fullship. Build innovative attendance management solutions with a passionate team.",
+    ogImage: "https://fullship.com/images/careers-og.jpg",
+    ogUrl: "https://fullship.com/careers",
+    twitterTitle: "Careers - Join Our Team | Fullship",
+    twitterDescription: "Discover exciting career opportunities at Fullship. Build innovative attendance management solutions with a passionate team.",
+    twitterImage: "https://fullship.com/images/careers-og.jpg",
+    twitterCard: "summary_large_image",
+    structuredData
+  });
+
+  return (
+    <div className={`careers-page ${isDarkMode ? 'dark-mode' : ''}`}>
+      <SkipNavLink />
+      
+      <main id="main-content" role="main">
+        <HeroBanner onApplyClick={() => handleApplyNowClick()} />
+        
+        <CompanyIntroduction />
+        
+        <EmployeeTestimonials />
+        
+        <BenefitsPerks />
+        
+        <JobListings 
+          jobs={jobs} 
+          loading={loading}
+          onApplyClick={handleApplyNowClick}
+        />
+        
+        <ApplicationForm onSubmit={(data) => {
+          trackEvent('careers_application_submitted', {
+            position: data.position,
+            location: data.location
+          });
+        }} />
+        
+        <FAQSection />
+      </main>
+
+      <CareersFooter />
+    </div>
+  );
+};
+
+export default CareersPage;
