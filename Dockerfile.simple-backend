@@ -1,0 +1,61 @@
+# Simplified Dockerfile - Backend only approach
+FROM node:18-alpine AS frontend-builder
+
+# Install openssl for build script
+RUN apk add --no-cache openssl
+
+WORKDIR /app
+
+# Copy and build frontend
+COPY frontend/package*.json ./
+RUN npm ci
+
+COPY frontend/ ./
+
+# Set static build variables
+ENV NODE_ENV=production
+ENV GENERATE_SOURCEMAP=false
+ENV REACT_APP_BUILD_TIME=2025-08-06T13:30:00.000Z
+ENV REACT_APP_BUILD_HASH=docker-static-build
+
+RUN npx react-app-rewired build
+
+FROM node:18-alpine AS production
+
+# Install curl for health checks
+RUN apk add --no-cache curl
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S backend -u 1001
+
+WORKDIR /app
+
+# Copy backend
+COPY backend/package*.json ./
+RUN npm ci --only=production
+
+COPY backend/ ./
+
+# Copy frontend build to serve as static files
+COPY --from=frontend-builder /app/build ./public
+
+# Set ownership
+RUN chown -R backend:nodejs /app
+
+USER backend
+
+# Environment variables for single-worker mode
+ENV NODE_ENV=production
+ENV ENABLE_CLUSTERING=false
+ENV MAX_WORKERS=1
+ENV PORT=3000
+
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:3000/health || exit 1
+
+# Start single worker instead of cluster
+CMD ["node", "server-worker.js"]

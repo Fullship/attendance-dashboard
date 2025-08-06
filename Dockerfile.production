@@ -1,0 +1,116 @@
+# Fixed Dockerfile for Coolify deployment
+FROM node:18-alpine AS frontend-builder
+
+# Install openssl for the build script
+RUN apk add --no-cache openssl
+
+WORKDIR /app
+
+# Copy package files and install ALL dependencies
+COPY frontend/package*.json ./
+RUN npm ci
+
+# Copy source code
+COPY frontend/ ./
+
+# Set static build variables (avoid dynamic shell commands)
+ENV NODE_ENV=production
+ENV GENERATE_SOURCEMAP=false
+ENV REACT_APP_BUILD_TIME=2025-08-06T13:30:00.000Z
+ENV REACT_APP_BUILD_HASH=docker-static-build
+
+# Build using react-scripts directly to avoid shell command issues
+RUN npx react-app-rewired build
+
+FROM node:18-alpine AS backend-builder
+
+WORKDIR /app
+
+# Copy package files and install production dependencies
+COPY backend/package*.json ./
+RUN npm ci --only=production
+
+# Copy backend source
+COPY backend/ ./
+
+FROM node:18-alpine AS production
+
+# Install nginx, curl, and dumb-init
+RUN apk add --no-cache nginx curl dumb-init
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S appuser -u 1001
+
+# Set up nginx directories and permissions
+RUN mkdir -p /var/cache/nginx /var/log/nginx /run/nginx /usr/share/nginx/html && \
+    touch /var/log/nginx/access.log /var/log/nginx/error.log && \
+    chown -R appuser:nodejs /var/cache/nginx /var/log/nginx /run/nginx
+
+WORKDIR /app
+
+# Copy built frontend and backend
+COPY --from=frontend-builder /app/build ./frontend
+COPY --from=backend-builder /app ./backend
+
+# Create simple nginx config that runs as non-root
+RUN echo 'worker_processes 1;' > /etc/nginx/nginx.conf && \
+    echo 'pid /run/nginx/nginx.pid;' >> /etc/nginx/nginx.conf && \
+    echo 'events { worker_connections 1024; }' >> /etc/nginx/nginx.conf && \
+    echo 'http {' >> /etc/nginx/nginx.conf && \
+    echo '  include /etc/nginx/mime.types;' >> /etc/nginx/nginx.conf && \
+    echo '  default_type application/octet-stream;' >> /etc/nginx/nginx.conf && \
+    echo '  access_log /var/log/nginx/access.log;' >> /etc/nginx/nginx.conf && \
+    echo '  error_log /var/log/nginx/error.log;' >> /etc/nginx/nginx.conf && \
+    echo '  server {' >> /etc/nginx/nginx.conf && \
+    echo '    listen 8080;' >> /etc/nginx/nginx.conf && \
+    echo '    root /app/frontend;' >> /etc/nginx/nginx.conf && \
+    echo '    index index.html;' >> /etc/nginx/nginx.conf && \
+    echo '    location / { try_files $$uri $$uri/ /index.html; }' >> /etc/nginx/nginx.conf && \
+    echo '    location /api/ {' >> /etc/nginx/nginx.conf && \
+    echo '      proxy_pass http://127.0.0.1:3002;' >> /etc/nginx/nginx.conf && \
+    echo '      proxy_set_header Host $$host;' >> /etc/nginx/nginx.conf && \
+    echo '      proxy_set_header X-Real-IP $$remote_addr;' >> /etc/nginx/nginx.conf && \
+    echo '    }' >> /etc/nginx/nginx.conf && \
+    echo '    location /health { return 200 "healthy"; add_header Content-Type text/plain; }' >> /etc/nginx/nginx.conf && \
+    echo '  }' >> /etc/nginx/nginx.conf && \
+    echo '}' >> /etc/nginx/nginx.conf
+
+# Create startup script that handles Redis gracefully
+RUN echo '#!/bin/sh' > /app/start.sh && \
+    echo 'echo "Starting services..."' >> /app/start.sh && \
+    echo '' >> /app/start.sh && \
+    echo '# Start nginx on port 8080 (non-root friendly)' >> /app/start.sh && \
+    echo 'nginx -c /etc/nginx/nginx.conf &' >> /app/start.sh && \
+    echo 'NGINX_PID=$!' >> /app/start.sh && \
+    echo 'echo "Nginx started with PID $NGINX_PID"' >> /app/start.sh && \
+    echo '' >> /app/start.sh && \
+    echo '# Wait a moment for nginx to start' >> /app/start.sh && \
+    echo 'sleep 2' >> /app/start.sh && \
+    echo '' >> /app/start.sh && \
+    echo '# Start backend with Redis fallback' >> /app/start.sh && \
+    echo 'cd /app/backend' >> /app/start.sh && \
+    echo 'echo "Starting backend..."' >> /app/start.sh && \
+    echo '' >> /app/start.sh && \
+    echo '# Disable clustering in container environment' >> /app/start.sh && \
+    echo 'export ENABLE_CLUSTERING=false' >> /app/start.sh && \
+    echo 'export MAX_WORKERS=1' >> /app/start.sh && \
+    echo '' >> /app/start.sh && \
+    echo '# Start single worker instead of cluster to avoid Redis issues' >> /app/start.sh && \
+    echo 'exec node server-worker.js' >> /app/start.sh && \
+    chmod +x /app/start.sh
+
+# Set ownership
+RUN chown -R appuser:nodejs /app
+
+USER appuser
+
+# Expose port 8080 instead of 80 (non-root friendly)
+EXPOSE 8080 3002
+
+# Health check on port 8080
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:8080/health || exit 1
+
+ENTRYPOINT ["dumb-init", "--"]
+CMD ["/app/start.sh"]
