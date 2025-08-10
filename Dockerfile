@@ -80,6 +80,10 @@ ENV DB_NAME=attendance_dashboard
 ENV DB_USER=postgres
 ENV SESSION_SECRET=attendance-dashboard-session-secret-2025
 
+# Redis configuration (optional - set to invalid host to disable)
+ENV REDIS_HOST=redis-not-available
+ENV REDIS_PORT=6379
+
 # Expose port
 EXPOSE 3002
 

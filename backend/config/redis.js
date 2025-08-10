@@ -7,36 +7,51 @@ const redisConfig = {
   password: process.env.REDIS_PASSWORD || '',
   retryDelayOnFailover: 100,
   enableReadyCheck: true,
-  maxRetriesPerRequest: 3,
+  maxRetriesPerRequest: 1,
   lazyConnect: true,
-  connectTimeout: 10000,
-  commandTimeout: 5000,
+  connectTimeout: 5000,
+  commandTimeout: 3000,
   keyPrefix: 'attendance:',
+  // Disable Redis if not available
+  enableOfflineQueue: false,
+  maxRetriesPerRequest: 1,
 };
 
-// Create Redis instance
-const redis = new Redis(redisConfig);
+// Create Redis instance with error handling
+let redis;
+let redisAvailable = false;
 
-// Redis connection events
-redis.on('connect', () => {
-  console.log('✅ Redis connected successfully');
-});
+try {
+  redis = new Redis(redisConfig);
+  
+  // Redis connection events
+  redis.on('connect', () => {
+    console.log('✅ Redis connected successfully');
+    redisAvailable = true;
+  });
 
-redis.on('ready', () => {
-  console.log('🚀 Redis ready for operations');
-});
+  redis.on('ready', () => {
+    console.log('🚀 Redis ready for operations');
+    redisAvailable = true;
+  });
 
-redis.on('error', (err) => {
-  console.error('❌ Redis connection error:', err);
-});
+  redis.on('error', (err) => {
+    console.error('❌ Redis connection error:', err.message);
+    redisAvailable = false;
+  });
 
-redis.on('close', () => {
-  console.log('🔌 Redis connection closed');
-});
+  redis.on('close', () => {
+    console.log('🔌 Redis connection closed');
+    redisAvailable = false;
+  });
 
-redis.on('reconnecting', () => {
-  console.log('🔄 Redis reconnecting...');
-});
+  redis.on('reconnecting', () => {
+    console.log('🔄 Redis reconnecting...');
+  });
+} catch (error) {
+  console.warn('⚠️ Redis not available, continuing without cache:', error.message);
+  redisAvailable = false;
+}
 
 // Cache utility functions
 class CacheService {
@@ -45,8 +60,15 @@ class CacheService {
     this.defaultTTL = 3600; // 1 hour
   }
 
+  // Check if Redis is available
+  isAvailable() {
+    return redisAvailable && this.redis;
+  }
+
   // Set cache with TTL
   async set(key, value, ttl = this.defaultTTL) {
+    if (!this.isAvailable()) return false;
+    
     try {
       const serializedValue = JSON.stringify(value);
       if (ttl) {
@@ -54,34 +76,40 @@ class CacheService {
       }
       return await this.redis.set(key, serializedValue);
     } catch (error) {
-      console.error('Cache set error:', error);
-      return null;
+      console.error('Cache set error:', error.message);
+      return false;
     }
   }
 
   // Get cache value
   async get(key) {
+    if (!this.isAvailable()) return null;
+    
     try {
       const value = await this.redis.get(key);
       return value ? JSON.parse(value) : null;
     } catch (error) {
-      console.error('Cache get error:', error);
+      console.error('Cache get error:', error.message);
       return null;
     }
   }
 
   // Delete cache key
   async del(key) {
+    if (!this.isAvailable()) return false;
+    
     try {
       return await this.redis.del(key);
     } catch (error) {
-      console.error('Cache delete error:', error);
-      return null;
+      console.error('Cache delete error:', error.message);
+      return false;
     }
   }
 
   // Delete multiple keys by pattern
   async delPattern(pattern) {
+    if (!this.isAvailable()) return false;
+    
     try {
       const keys = await this.redis.keys(pattern);
       if (keys.length > 0) {
@@ -248,11 +276,17 @@ class CacheService {
 
   // Ping Redis connection
   async ping() {
+    if (!this.isAvailable()) {
+      console.log('Redis not available, returning false');
+      return false;
+    }
+    
     try {
       const result = await this.redis.ping();
       return result === 'PONG';
     } catch (error) {
-      console.error('Redis ping error:', error);
+      console.error('Redis ping error:', error.message);
+      redisAvailable = false;
       return false;
     }
   }
