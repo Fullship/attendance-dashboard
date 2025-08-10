@@ -39,7 +39,7 @@ async function testAsyncOptimizations() {
 
     // Test 2: Worker Thread Batch Processing
     console.log('\n2️⃣ Testing Worker Thread Batch Processing...');
-    const batchWorkerPool = new WorkerPool('./workers/batch-processor.js', 2);
+    const batchWorkerPool = new WorkerPool('./workers/batch-processor.js', 1);
 
     const testBatch = [
       { 'Employee Name': 'John Doe', 'Employee ID': 'EMP001', Date: '2025-07-18' },

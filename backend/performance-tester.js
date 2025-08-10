@@ -78,7 +78,7 @@ class PerformanceTester {
    */
   async testAsyncExcelProcessing(filePath, iterations = 5) {
     console.log('🔄 Testing asynchronous Excel processing...');
-    const workerPool = new WorkerPool('./workers/excel-processor.js', 2);
+    const workerPool = new WorkerPool('./workers/excel-processor.js', 1);
     const times = [];
     const memoryUsage = [];
 
@@ -190,7 +190,7 @@ class PerformanceTester {
    */
   async testAsyncBatchProcessing(recordCount = 1000, iterations = 3) {
     console.log('🔄 Testing asynchronous batch processing...');
-    const workerPool = new WorkerPool('./workers/batch-processor.js', 4);
+    const workerPool = new WorkerPool('./workers/batch-processor.js', 1);
     const times = [];
     const memoryUsage = [];
 

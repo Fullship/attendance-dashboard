@@ -12,8 +12,8 @@ const WorkerPool = require('../utils/WorkerPool');
 const path = require('path');
 
 // Initialize worker pools for different types of CPU-intensive operations
-const excelWorkerPool = new WorkerPool('./workers/excel-processor.js', 2);
-const batchWorkerPool = new WorkerPool('./workers/batch-processor.js', 4);
+const excelWorkerPool = new WorkerPool('./workers/excel-processor.js', 1);
+const batchWorkerPool = new WorkerPool('./workers/batch-processor.js', 1);
 
 // BEFORE: Synchronous file operations (BLOCKING)
 const oldFileUploadHandler = async (req, res) => {

@@ -24,9 +24,9 @@ const {
 
 const router = express.Router();
 
-// Initialize worker pools for async processing
-const excelWorkerPool = new WorkerPool('./workers/excel-processor.js', 2);
-const batchWorkerPool = new WorkerPool('./workers/batch-processor.js', 4);
+// Initialize worker pools for async processing (reduced for memory optimization)
+const excelWorkerPool = new WorkerPool('./workers/excel-processor.js', 1);
+const batchWorkerPool = new WorkerPool('./workers/batch-processor.js', 1);
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
