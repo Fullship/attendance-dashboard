@@ -23,6 +23,9 @@ RUN cd backend && npm ci --only=production
 # Copy backend source
 COPY backend/ ./backend/
 
+# Copy production environment file
+COPY .env.production ./backend/.env
+
 # Copy and install frontend dependencies
 COPY frontend/package*.json ./frontend/
 RUN cd frontend && npm ci
@@ -68,6 +71,14 @@ ENV PORT=3002
 ENV ENABLE_CLUSTERING=false
 ENV MAX_WORKERS=1
 ENV SERVE_STATIC=true
+
+# Critical environment variables for production
+ENV JWT_SECRET=attendance-dashboard-jwt-secret-2025-production
+ENV DB_HOST=localhost
+ENV DB_PORT=5432
+ENV DB_NAME=attendance_dashboard
+ENV DB_USER=postgres
+ENV SESSION_SECRET=attendance-dashboard-session-secret-2025
 
 # Expose port
 EXPOSE 3002
