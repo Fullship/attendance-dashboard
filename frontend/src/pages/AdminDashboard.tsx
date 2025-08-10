@@ -518,7 +518,17 @@ const AdminDashboard: React.FC = () => {
       console.time('Teams API Call');
 
       // Let's also manually test with fetch to see raw network response
-      const baseURL = process.env.REACT_APP_API_URL || 'http://localhost:3002';
+      const getApiBaseUrl = () => {
+        if (process.env.REACT_APP_API_URL) {
+          return process.env.REACT_APP_API_URL.replace('/api', '');
+        }
+        if (window.location.hostname === 'my.fullship.net') {
+          return 'https://my.fullship.net';
+        }
+        return 'http://localhost:3002';
+      };
+      
+      const baseURL = getApiBaseUrl();
       const fullURL = `${baseURL}/api/admin/teams`;
       console.log('🌐 Full URL being called:', fullURL);
 

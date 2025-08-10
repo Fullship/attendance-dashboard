@@ -71,8 +71,18 @@ export const checkForAppUpdate = async () => {
   const buildInfo = getBuildInfo();
 
   try {
-    // Get API base URL (same as used in api.ts)
-    const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3002/api';
+    // Get API base URL with production fallback (same logic as api.ts)
+    const getApiBaseUrl = () => {
+      if (process.env.REACT_APP_API_URL) {
+        return process.env.REACT_APP_API_URL;
+      }
+      if (window.location.hostname === 'my.fullship.net') {
+        return 'https://my.fullship.net/api';
+      }
+      return 'http://localhost:3002/api';
+    };
+    
+    const API_BASE_URL = getApiBaseUrl();
     
     // Fetch current build info from server
     const response = await fetch(`${API_BASE_URL}/build-info`, {

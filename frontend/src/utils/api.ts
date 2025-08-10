@@ -24,7 +24,24 @@ import {
   SystemSetting,
 } from '../types';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3002/api';
+// Get API base URL with production fallback
+const getApiBaseUrl = () => {
+  // If we have the environment variable, use it
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
+  }
+  
+  // If we're on production domain, use production API
+  if (window.location.hostname === 'my.fullship.net') {
+    return 'https://my.fullship.net/api';
+  }
+  
+  // Default to localhost for development
+  return 'http://localhost:3002/api';
+};
+
+const API_BASE_URL = getApiBaseUrl();
+console.log('API Base URL:', API_BASE_URL);
 
 // Create axios instance
 const api = axios.create({

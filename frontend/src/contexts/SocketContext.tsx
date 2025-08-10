@@ -44,9 +44,26 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
 
   useEffect(() => {
     // Connect to Socket.IO server
-    const newSocket = io(
-      process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:3002',
-      {
+    // Production URL determination - ensure we use the correct URL in production
+    const getSocketUrl = () => {
+      // If we have the API URL environment variable, derive socket URL from it
+      if (process.env.REACT_APP_API_URL) {
+        return process.env.REACT_APP_API_URL.replace('/api', '');
+      }
+      
+      // If we're on the production domain, use the production URL
+      if (window.location.hostname === 'my.fullship.net') {
+        return 'https://my.fullship.net';
+      }
+      
+      // Default to localhost for development
+      return 'http://localhost:3002';
+    };
+
+    const socketUrl = getSocketUrl();
+    console.log('Connecting to Socket.IO at:', socketUrl);
+    
+    const newSocket = io(socketUrl, {
         withCredentials: true,
       }
     );

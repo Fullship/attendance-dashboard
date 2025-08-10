@@ -6,8 +6,20 @@ import { PerformanceTracker } from './datadog';
 class MonitoredAPIService {
   private baseURL: string;
 
-  constructor(baseURL: string = process.env.REACT_APP_API_URL || 'http://localhost:3002/api') {
-    this.baseURL = baseURL;
+  constructor(baseURL?: string) {
+    if (baseURL) {
+      this.baseURL = baseURL;
+    } else {
+      // Get API base URL with production fallback
+      if (process.env.REACT_APP_API_URL) {
+        this.baseURL = process.env.REACT_APP_API_URL;
+      } else if (window.location.hostname === 'my.fullship.net') {
+        this.baseURL = 'https://my.fullship.net/api';
+      } else {
+        this.baseURL = 'http://localhost:3002/api';
+      }
+    }
+    console.log('MonitoredAPIService initialized with base URL:', this.baseURL);
   }
 
   /**
