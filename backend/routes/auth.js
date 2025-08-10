@@ -121,8 +121,22 @@ router.post('/login', [
       }
     });
   } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('=== LOGIN ERROR DEBUG ===');
+    console.error('Error message:', error.message);
+    console.error('Error code:', error.code);
+    console.error('Error stack:', error.stack);
+    console.error('JWT_SECRET available:', !!process.env.JWT_SECRET);
+    console.error('DB_HOST:', process.env.DB_HOST);
+    console.error('DB_NAME:', process.env.DB_NAME);
+    console.error('=========================');
+    
+    res.status(500).json({ 
+      message: 'Server error',
+      ...(process.env.NODE_ENV === 'development' && { 
+        error: error.message,
+        code: error.code 
+      })
+    });
   }
 });
 
