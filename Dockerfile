@@ -30,17 +30,25 @@ RUN cd frontend && npm ci
 # Copy frontend source and build with proper environment variables
 COPY frontend/ ./frontend/
 
-# Set build arguments and environment variables for React build
-ARG REACT_APP_API_URL=https://my.fullship.net/api
-ENV NODE_ENV=production
-ENV GENERATE_SOURCEMAP=false
-ENV REACT_APP_API_URL=${REACT_APP_API_URL}
-
-# Build frontend with environment variables
+# Build frontend with explicit environment variable setting
 RUN cd frontend && \
+    export REACT_APP_API_URL=https://my.fullship.net/api && \
+    export NODE_ENV=production && \
+    export GENERATE_SOURCEMAP=false && \
     REACT_APP_BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ) \
     REACT_APP_BUILD_HASH=coolify-$(date +%s) \
     npm run build
+
+# Verify the build contains correct API URL
+RUN cd frontend/build/static/js && \
+    MAIN_JS=$(ls main.*.js | head -1) && \
+    echo "Checking built main JS file: $MAIN_JS" && \
+    if grep -q "my.fullship.net/api" "$MAIN_JS"; then \
+        echo "✅ Production API URL found in build"; \
+    else \
+        echo "❌ Production API URL NOT found in build"; \
+        exit 1; \
+    fi
 
 # Note: Backend expects frontend build at ../frontend/build relative to backend directory
 # Since we're already in /app, the structure /app/frontend/build works correctly
