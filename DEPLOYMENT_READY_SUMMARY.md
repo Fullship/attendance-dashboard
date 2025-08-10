@@ -1,8 +1,8 @@
-# 🎉 Deployment Ready for i.fullship.net
+# 🎉 Deployment Ready for my.fullship.net
 
 ## ✅ Production Build Completed Successfully!
 
-Your attendance dashboard is now ready for deployment to **i.fullship.net**.
+Your attendance dashboard is now ready for deployment to **my.fullship.net**.
 
 ### 📦 Generated Files:
 
@@ -24,13 +24,13 @@ Your attendance dashboard is now ready for deployment to **i.fullship.net**.
 
 ### 1. Upload to Your Server
 ```bash
-scp attendance-dashboard-production-20250803_154704.tar.gz user@i.fullship.net:/var/www/
+scp attendance-dashboard-production-20250803_154704.tar.gz user@my.fullship.net:/var/www/
 ```
 
 ### 2. Extract and Setup
 ```bash
 # On your server
-ssh user@i.fullship.net
+ssh user@my.fullship.net
 cd /var/www/
 tar -xzf attendance-dashboard-production-20250803_154704.tar.gz
 cd attendance-dashboard/
@@ -85,15 +85,15 @@ Before going live, update these in your production files:
 ## 🌐 Domain Configuration:
 
 Ensure your domain points to your server:
-- **DNS A Record**: `i.fullship.net` → `your_server_ip`
-- **DNS CNAME**: `www.i.fullship.net` → `i.fullship.net`
+- **DNS A Record**: `my.fullship.net` → `your_server_ip`
+- **DNS CNAME**: `www.my.fullship.net` → `my.fullship.net`
 
 ## 📱 After Deployment:
 
 Your attendance dashboard will be available at:
-- **URL**: https://i.fullship.net
+- **URL**: https://my.fullship.net
 - **Admin Login**: admin@company.com / admin123
-- **API Health Check**: https://i.fullship.net/api/health
+- **API Health Check**: https://my.fullship.net/api/health
 
 ## 🎯 Features Ready for Production:
 

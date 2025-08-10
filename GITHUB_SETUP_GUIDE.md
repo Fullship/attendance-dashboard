@@ -45,7 +45,7 @@ In **Settings → Secrets and variables → Actions**, add:
 DB_PASSWORD_TEST=your_test_db_password
 
 # Deployment secrets (if using automated deployment)
-SERVER_HOST=i.fullship.net
+SERVER_HOST=my.fullship.net
 SERVER_USER=your_server_user
 SERVER_SSH_KEY=your_private_ssh_key
 
@@ -114,7 +114,7 @@ npm run dev
 Use the deployment package we created:
 ```bash
 # Upload to production server
-scp attendance-dashboard-production-*.tar.gz user@i.fullship.net:/var/www/
+scp attendance-dashboard-production-*.tar.gz user@my.fullship.net:/var/www/
 
 # Deploy (see DEPLOYMENT_GUIDE_FULLSHIP.md for details)
 ```

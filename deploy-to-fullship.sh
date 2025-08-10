@@ -1,14 +1,16 @@
 #!/bin/bash
 
-# Production Deployment Script for i.fullship.net
-# This script prepares and deploys the attendance dashboard to your production server
+#!/bin/bash
+
+# Production Deployment Script for my.fullship.net
+# This script packages and prepares the application for production deployment
 
 set -e
 
-echo "🚀 Deploying Attendance Dashboard to i.fullship.net"
+echo "🚀 Deploying Attendance Dashboard to my.fullship.net"
 
 # Configuration
-DOMAIN="i.fullship.net"
+DOMAIN="my.fullship.net"
 PROJECT_NAME="attendance-dashboard"
 BUILD_DATE=$(date +%Y%m%d_%H%M%S)
 
@@ -44,14 +46,14 @@ fi
 log "🔧 Pre-deployment preparation"
 
 # 1. Update environment variables for production
-log "📝 Updating environment variables for i.fullship.net"
+log "📝 Updating environment variables for my.fullship.net"
 
 # Update backend environment
 cat > backend/.env.production << EOF
-# Production Environment - i.fullship.net
+# Production Environment - my.fullship.net
 NODE_ENV=production
 PORT=3002
-FRONTEND_URL=https://i.fullship.net
+FRONTEND_URL=https://my.fullship.net
 
 # Database Configuration (Update with your production DB)
 DB_HOST=localhost
@@ -125,7 +127,7 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3002
-      - FRONTEND_URL=https://i.fullship.net
+      - FRONTEND_URL=https://my.fullship.net
     volumes:
       - ./backend/.env.production:/app/.env
       - ./backend/uploads:/app/uploads
@@ -172,7 +174,7 @@ volumes:
 EOF
 
 # 5. Create production Nginx configuration
-log "🌐 Creating Nginx configuration for i.fullship.net"
+log "🌐 Creating Nginx configuration for my.fullship.net"
 
 cat > nginx.prod.conf << EOF
 user nginx;
@@ -232,7 +234,7 @@ http {
     # Main server block
     server {
         listen 80;
-        server_name i.fullship.net;
+        server_name my.fullship.net;
         
         # Redirect HTTP to HTTPS (uncomment when SSL is configured)
         # return 301 https://\$server_name\$request_uri;
@@ -298,7 +300,7 @@ http {
     # HTTPS server block (uncomment when SSL certificates are available)
     # server {
     #     listen 443 ssl http2;
-    #     server_name i.fullship.net;
+    #     server_name my.fullship.net;
     #     
     #     ssl_certificate /etc/nginx/ssl/fullchain.pem;
     #     ssl_certificate_key /etc/nginx/ssl/privkey.pem;
@@ -326,7 +328,7 @@ module.exports = {
       env_production: {
         NODE_ENV: 'production',
         PORT: 3002,
-        FRONTEND_URL: 'https://i.fullship.net',
+        FRONTEND_URL: 'https://my.fullship.net',
       },
       
       // Auto-restart configuration
@@ -376,10 +378,10 @@ log "✅ Deployment archive created: \$ARCHIVE_NAME"
 echo ""
 log "🎉 Production build completed!"
 echo ""
-info "📋 Next steps to deploy to i.fullship.net:"
+info "📋 Next steps to deploy to my.fullship.net:"
 echo ""
 echo "1. Upload the archive to your server:"
-echo "   scp \$ARCHIVE_NAME user@i.fullship.net:/path/to/deployment/"
+echo "   scp \$ARCHIVE_NAME user@my.fullship.net:/path/to/deployment/"
 echo ""
 echo "2. On your server, extract and setup:"
 echo "   tar -xzf \$ARCHIVE_NAME"
@@ -402,4 +404,4 @@ echo "   - Configure SSL certificates for HTTPS"
 echo "   - Set up proper firewall rules"
 echo "   - Configure domain DNS to point to your server"
 echo ""
-info "🔗 Your application will be available at: https://i.fullship.net"
+info "🔗 Your application will be available at: https://my.fullship.net"

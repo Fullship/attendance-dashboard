@@ -1,4 +1,4 @@
-# 🚀 Deployment Guide for i.fullship.net
+# 🚀 Deployment Guide for my.fullship.net
 
 ## Quick Deployment Steps
 
@@ -10,14 +10,14 @@
 ```
 
 This script will:
-- Update environment variables for i.fullship.net
+- Update environment variables for my.fullship.net
 - Build the frontend for production
 - Create Docker configurations
 - Generate deployment archive
 
 ### 2. Server Requirements
 
-Your server at i.fullship.net needs:
+Your server at my.fullship.net needs:
 - Node.js 18+ 
 - PostgreSQL 15+
 - Redis (optional but recommended)
@@ -28,7 +28,7 @@ Your server at i.fullship.net needs:
 
 ```bash
 # Upload the generated archive
-scp attendance-dashboard-production-*.tar.gz user@i.fullship.net:/var/www/
+scp attendance-dashboard-production-*.tar.gz user@my.fullship.net:/var/www/
 ```
 
 ### 4. Server Setup
@@ -66,7 +66,7 @@ Update these files with your production values:
 ```properties
 NODE_ENV=production
 PORT=3002
-FRONTEND_URL=https://i.fullship.net
+FRONTEND_URL=https://my.fullship.net
 
 # Your database credentials
 DB_HOST=localhost
@@ -128,22 +128,22 @@ sudo systemctl reload nginx
 ```bash
 # Using Let's Encrypt
 sudo apt install certbot python3-certbot-nginx
-sudo certbot --nginx -d i.fullship.net
+sudo certbot --nginx -d my.fullship.net
 ```
 
 ### 10. Domain Configuration
 
-Ensure your domain `i.fullship.net` points to your server:
-- A record: i.fullship.net → your_server_ip
-- CNAME: www.i.fullship.net → i.fullship.net
+Ensure your domain `my.fullship.net` points to your server:
+- A record: my.fullship.net → your_server_ip
+- CNAME: www.my.fullship.net → my.fullship.net
 
 ## 🔧 Quick Test
 
 After deployment, test these URLs:
 
-- **Frontend**: https://i.fullship.net
-- **API Health**: https://i.fullship.net/api/health
-- **Admin Login**: https://i.fullship.net/login
+- **Frontend**: https://my.fullship.net
+- **API Health**: https://my.fullship.net/api/health
+- **Admin Login**: https://my.fullship.net/login
   - Email: admin@company.com
   - Password: admin123
 
@@ -202,7 +202,7 @@ The application includes:
 ## 📱 Access Your Dashboard
 
 Once deployed, access your attendance dashboard at:
-**https://i.fullship.net**
+**https://my.fullship.net**
 
 Default admin credentials:
 - Email: admin@company.com
