@@ -1,0 +1,26 @@
+# Environment Variables for Coolify
+# Copy and paste these into your Coolify application settings
+
+# Database Configuration
+DB_HOST=attendance-db
+DB_PORT=5432
+DB_NAME=attendance_dashboard
+DB_USER=attendance_user
+DB_PASSWORD=nVp50Q8PefBbCqXNiLmOb45K0ZXCHv7EKEmTcr4GRDxT5gXoIBdLL7MYLx8PGP19
+
+# JWT Security
+JWT_SECRET=712154c1e504f6cb30c1510fe6f1b20b826da31c86c81bbb338650b82b961580a4f69c3bf19ea3ec96dcc6fc8316daf585c6dad3054d88be3e528bf5ec547c72
+
+# Optional Redis (keep disabled for now)
+REDIS_ENABLED=false
+REDIS_HOST=disabled
+
+# Application Settings
+NODE_ENV=production
+PORT=3002
+
+# IMPORTANT NOTES:
+# 1. Change DB_PASSWORD to match your PostgreSQL service password
+# 2. The DB_HOST should match your PostgreSQL service name in Coolify
+# 3. Keep the JWT_SECRET as generated - it's already secure
+# 4. Don't change PORT unless your Dockerfile expects different port
