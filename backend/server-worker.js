@@ -323,6 +323,29 @@ app.use((err, req, res, next) => {
   });
 });
 
+// Serve static files from React build (if frontend build exists)
+const frontendBuildPath = path.join(__dirname, '../frontend/build');
+app.use(express.static(frontendBuildPath));
+
+// Handle React routing (SPA fallback) - must be before 404 handler
+app.get('*', (req, res, next) => {
+  // Skip API routes and other backend endpoints
+  if (req.path.startsWith('/api/') || 
+      req.path.startsWith('/health') || 
+      req.path.startsWith('/socket.io/')) {
+    return next();
+  }
+  
+  // Try to serve the React app
+  const indexPath = path.join(frontendBuildPath, 'index.html');
+  res.sendFile(indexPath, (err) => {
+    if (err) {
+      // If index.html doesn't exist, fall through to 404 handler
+      next();
+    }
+  });
+});
+
 // 404 handler
 app.use('*', (req, res) => {
   res.status(404).json({
