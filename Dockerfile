@@ -29,10 +29,15 @@ RUN cd frontend && npm ci
 
 # Copy frontend source and build with proper environment variables
 COPY frontend/ ./frontend/
+
+# Set build arguments and environment variables for React build
+ARG REACT_APP_API_URL=https://my.fullship.net/api
+ENV NODE_ENV=production
+ENV GENERATE_SOURCEMAP=false
+ENV REACT_APP_API_URL=${REACT_APP_API_URL}
+
+# Build frontend with environment variables
 RUN cd frontend && \
-    NODE_ENV=production \
-    GENERATE_SOURCEMAP=false \
-    REACT_APP_API_URL=https://my.fullship.net/api \
     REACT_APP_BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ) \
     REACT_APP_BUILD_HASH=coolify-$(date +%s) \
     npm run build
