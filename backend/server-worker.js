@@ -26,6 +26,7 @@ const adminRoutes = require('./routes/admin');
 const enhancedLeaveRoutes = require('./routes/enhanced-leave');
 const adminLeaveRoutes = require('./routes/admin-leave');
 const rolesRoutes = require('./routes/roles');
+const performanceRoutes = require('./routes/performance');
 
 // Import database monitoring middleware
 const DatabaseMonitoringAPI = require('./middleware/database-monitoring');
@@ -273,9 +274,10 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/admin', rolesRoutes); // Mount role routes under admin (consistent with server.js)
 app.use('/api/enhanced-leave', enhancedLeaveRoutes);
 app.use('/api/admin-leave', adminLeaveRoutes);
-app.use('/api/roles', rolesRoutes);
+app.use('/api/performance', performanceRoutes);
 
 // Build info endpoint for cache busting
 app.get('/api/build-info', (req, res) => {
