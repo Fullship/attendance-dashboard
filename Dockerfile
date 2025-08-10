@@ -32,6 +32,7 @@ COPY frontend/ ./frontend/
 RUN cd frontend && \
     NODE_ENV=production \
     GENERATE_SOURCEMAP=false \
+    REACT_APP_API_URL=https://my.fullship.net/api \
     REACT_APP_BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ) \
     REACT_APP_BUILD_HASH=coolify-$(date +%s) \
     npm run build
