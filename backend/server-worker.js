@@ -80,6 +80,7 @@ const io = new Server(httpServer, {
             'http://localhost:3001',
             'http://localhost:3004',
             'http://localhost:3005',
+            'https://my.fullship.net',
           ];
 
       if (allowedOrigins.indexOf(origin) !== -1) {
@@ -126,6 +127,7 @@ app.use(
             'http://localhost:3001',
             'http://localhost:3004',
             'http://localhost:3005',
+            'https://my.fullship.net',
           ];
 
       if (allowedOrigins.indexOf(origin) !== -1) {
