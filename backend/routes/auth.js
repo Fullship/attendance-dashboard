@@ -281,3 +281,58 @@ router.get('/me', async (req, res) => {
 });
 
 module.exports = router;
+
+// Database health check endpoint
+router.get('/db-test', async (req, res) => {
+  try {
+    console.log('=== DB TEST DEBUG ===');
+    console.log('Testing database connection...');
+    
+    // Test basic database connection
+    const testQuery = await pool.query('SELECT NOW() as current_time');
+    console.log('✅ Database connection successful');
+    console.log('Current time from DB:', testQuery.rows[0].current_time);
+    
+    // Test if users table exists
+    const tableCheck = await pool.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'users'
+      );
+    `);
+    console.log('Users table exists:', tableCheck.rows[0].exists);
+    
+    // Count users
+    if (tableCheck.rows[0].exists) {
+      const userCount = await pool.query('SELECT COUNT(*) as count FROM users');
+      console.log('Total users in database:', userCount.rows[0].count);
+      
+      // Check for admin users
+      const adminCount = await pool.query('SELECT COUNT(*) as count FROM users WHERE is_admin = true');
+      console.log('Admin users in database:', adminCount.rows[0].count);
+    }
+    
+    res.json({
+      success: true,
+      database_connected: true,
+      users_table_exists: tableCheck.rows[0].exists,
+      timestamp: testQuery.rows[0].current_time
+    });
+    
+  } catch (error) {
+    console.error('=== DB TEST ERROR ===');
+    console.error('Error message:', error.message);
+    console.error('Error code:', error.code);
+    console.error('DB_HOST:', process.env.DB_HOST);
+    console.error('DB_NAME:', process.env.DB_NAME);
+    console.error('DB_USER:', process.env.DB_USER);
+    console.error('====================');
+    
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      code: error.code
+    });
+  }
+});
