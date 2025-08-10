@@ -60,6 +60,11 @@ const pool = new Pool({
   user: process.env.DB_USER,
   password: String(process.env.DB_PASSWORD),
 
+  // SSL Configuration (disable for Docker internal networks)
+  ssl: process.env.DB_SSL === 'false' ? false : 
+       process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } :
+       process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+
   // Performance optimizations
   max: 20, // Maximum number of clients in the pool
   min: 5, // Minimum number of clients in the pool
