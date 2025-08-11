@@ -6,11 +6,12 @@ CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     username VARCHAR(255) UNIQUE NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
     role VARCHAR(50) DEFAULT 'employee',
     first_name VARCHAR(100),
     last_name VARCHAR(100),
     department VARCHAR(100),
+    is_admin BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -54,14 +55,15 @@ CREATE TABLE IF NOT EXISTS attendance_records (
 );
 
 -- Insert admin user (password is 'admin123' hashed with bcrypt)
-INSERT INTO users (username, email, password, role, first_name, last_name) 
+INSERT INTO users (username, email, password_hash, role, first_name, last_name, is_admin) 
 VALUES (
     'admin',
     'admin@company.com',
     '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
     'admin',
     'Admin',
-    'User'
+    'User',
+    TRUE
 ) ON CONFLICT (email) DO NOTHING;
 
 -- Create indexes for better performance
