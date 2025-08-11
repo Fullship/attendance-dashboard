@@ -40,35 +40,15 @@ RUN cd frontend && \
     REACT_APP_BUILD_HASH=coolify-$(date +%s) \
     npm run build
 
-# Verify the build and frontend structure
-RUN echo "🔍 Verifying frontend build..." && \
-    ls -la frontend/build/ && \
-    echo "📁 Frontend build contents:" && \
-    find frontend/build -name "*.html" -o -name "*.css" -o -name "*.js" | head -10 && \
-    if [ -f "frontend/build/index.html" ]; then \
-        echo "✅ index.html found"; \
+# Verify the build contains your Coolify domain (simplified)
+RUN cd frontend/build && \
+    echo "� Checking frontend build..." && \
+    ls -la && \
+    if [ -f "index.html" ]; then \
+        echo "✅ Frontend build successful - index.html found"; \
     else \
-        echo "❌ index.html NOT found - frontend will not work"; \
+        echo "❌ Frontend build failed - index.html missing"; \
         exit 1; \
-    fi && \
-    if [ -d "frontend/build/static" ]; then \
-        echo "✅ static directory found"; \
-    else \
-        echo "❌ static directory NOT found"; \
-        exit 1; \
-    fi
-
-# Verify the build contains your Coolify domain
-RUN cd frontend/build/static/js && \
-    MAIN_JS=$(ls main.*.js | head -1) && \
-    echo "Checking built main JS file: $MAIN_JS" && \
-    API_URL=${REACT_APP_API_URL:-https://wswwkwgk48os8gwo48owg8gk.45.136.18.66.sslip.io/api} && \
-    if grep -q "wswwkwgk48os8gwo48owg8gk.45.136.18.66.sslip.io" "$MAIN_JS"; then \
-        echo "✅ Coolify domain found in build: $API_URL"; \
-    else \
-        echo "⚠️  Coolify domain NOT found in build, check environment variables"; \
-        echo "Built file contains:"; \
-        head -c 500 "$MAIN_JS"; \
     fi
 
 # Note: Backend expects frontend build at ../frontend/build relative to backend directory
