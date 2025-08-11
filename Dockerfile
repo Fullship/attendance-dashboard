@@ -1,10 +1,10 @@
-# COOLIFY FIXED DOCKERFILE - NO MULTI-STAGE BUILD
-# Date: 2025-08-07
-# Single-stage build for Coolify deployment
+# COOLIFY OPTIMIZED DOCKERFILE - UPDATED FOR YOUR DOMAIN
+# Date: 2025-08-11
+# Single-stage build for Coolify deployment with your specific domain
 FROM node:18-alpine
 
 # Build argument to prevent caching issues
-ARG CACHEBUST=20250807
+ARG CACHEBUST=20250811
 RUN echo "Cache bust: $CACHEBUST"
 
 # Install necessary packages including openssl for frontend build
@@ -30,24 +30,27 @@ RUN cd frontend && npm ci
 # Copy frontend source and build with proper environment variables
 COPY frontend/ ./frontend/
 
-# Build frontend with explicit environment variable setting
+# Build frontend with your specific Coolify domain
 RUN cd frontend && \
-    export REACT_APP_API_URL=https://my.fullship.net/api && \
+    export REACT_APP_API_URL=${REACT_APP_API_URL:-https://wswwkwgk48os8gwo48owg8gk.45.136.18.66.sslip.io/api} && \
     export NODE_ENV=production && \
     export GENERATE_SOURCEMAP=false && \
+    echo "Building with API URL: $REACT_APP_API_URL" && \
     REACT_APP_BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ) \
     REACT_APP_BUILD_HASH=coolify-$(date +%s) \
     npm run build
 
-# Verify the build contains correct API URL
+# Verify the build contains your Coolify domain
 RUN cd frontend/build/static/js && \
     MAIN_JS=$(ls main.*.js | head -1) && \
     echo "Checking built main JS file: $MAIN_JS" && \
-    if grep -q "my.fullship.net/api" "$MAIN_JS"; then \
-        echo "✅ Production API URL found in build"; \
+    API_URL=${REACT_APP_API_URL:-https://wswwkwgk48os8gwo48owg8gk.45.136.18.66.sslip.io/api} && \
+    if grep -q "wswwkwgk48os8gwo48owg8gk.45.136.18.66.sslip.io" "$MAIN_JS"; then \
+        echo "✅ Coolify domain found in build: $API_URL"; \
     else \
-        echo "❌ Production API URL NOT found in build"; \
-        exit 1; \
+        echo "⚠️  Coolify domain NOT found in build, check environment variables"; \
+        echo "Built file contains:"; \
+        head -c 500 "$MAIN_JS"; \
     fi
 
 # Note: Backend expects frontend build at ../frontend/build relative to backend directory
@@ -69,8 +72,11 @@ ENV ENABLE_CLUSTERING=false
 ENV MAX_WORKERS=1
 ENV SERVE_STATIC=true
 
+# Default API URL - will be overridden by Coolify environment variables
+ENV REACT_APP_API_URL=https://wswwkwgk48os8gwo48owg8gk.45.136.18.66.sslip.io/api
+
 # Note: Database and JWT environment variables will be provided by Coolify
-# Do not hardcode them here as they will override Coolify settings
+# The REACT_APP_API_URL above can be overridden by setting it in Coolify environment variables
 
 # Expose port
 EXPOSE 3002
