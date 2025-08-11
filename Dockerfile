@@ -40,6 +40,24 @@ RUN cd frontend && \
     REACT_APP_BUILD_HASH=coolify-$(date +%s) \
     npm run build
 
+# Verify the build and frontend structure
+RUN echo "🔍 Verifying frontend build..." && \
+    ls -la frontend/build/ && \
+    echo "📁 Frontend build contents:" && \
+    find frontend/build -name "*.html" -o -name "*.css" -o -name "*.js" | head -10 && \
+    if [ -f "frontend/build/index.html" ]; then \
+        echo "✅ index.html found"; \
+    else \
+        echo "❌ index.html NOT found - frontend will not work"; \
+        exit 1; \
+    fi && \
+    if [ -d "frontend/build/static" ]; then \
+        echo "✅ static directory found"; \
+    else \
+        echo "❌ static directory NOT found"; \
+        exit 1; \
+    fi
+
 # Verify the build contains your Coolify domain
 RUN cd frontend/build/static/js && \
     MAIN_JS=$(ls main.*.js | head -1) && \
@@ -75,8 +93,12 @@ ENV SERVE_STATIC=true
 # Default API URL - will be overridden by Coolify environment variables
 ENV REACT_APP_API_URL=https://wswwkwgk48os8gwo48owg8gk.45.136.18.66.sslip.io/api
 
-# Note: Database and JWT environment variables will be provided by Coolify
-# The REACT_APP_API_URL above can be overridden by setting it in Coolify environment variables
+# Redis defaults - will be overridden by Coolify environment variables
+ENV REDIS_HOST=attendance-redis
+ENV REDIS_PORT=6379
+
+# Note: Database, JWT, and Redis password environment variables will be provided by Coolify
+# The environment variables above can be overridden by setting them in Coolify environment variables
 
 # Expose port
 EXPOSE 3002
