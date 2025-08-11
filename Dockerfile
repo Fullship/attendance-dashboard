@@ -30,9 +30,9 @@ RUN cd frontend && npm ci
 # Copy frontend source and build with proper environment variables
 COPY frontend/ ./frontend/
 
-# Build frontend with your specific Coolify domain
+# Build frontend with your specific Coolify domain (HTTP for localhost)
 RUN cd frontend && \
-    export REACT_APP_API_URL=${REACT_APP_API_URL:-https://wswwkwgk48os8gwo48owg8gk.45.136.18.66.sslip.io/api} && \
+    export REACT_APP_API_URL=${REACT_APP_API_URL:-http://wswwkwgk48os8gwo48owg8gk.45.136.18.66.sslip.io/api} && \
     export NODE_ENV=production && \
     export GENERATE_SOURCEMAP=false && \
     echo "Building with API URL: $REACT_APP_API_URL" && \
@@ -70,8 +70,8 @@ ENV ENABLE_CLUSTERING=false
 ENV MAX_WORKERS=1
 ENV SERVE_STATIC=true
 
-# Default API URL - will be overridden by Coolify environment variables
-ENV REACT_APP_API_URL=https://wswwkwgk48os8gwo48owg8gk.45.136.18.66.sslip.io/api
+# Default API URL - HTTP for localhost Coolify (will be overridden by environment variables)
+ENV REACT_APP_API_URL=http://wswwkwgk48os8gwo48owg8gk.45.136.18.66.sslip.io/api
 
 # Redis defaults - will be overridden by Coolify environment variables
 ENV REDIS_HOST=attendance-redis
