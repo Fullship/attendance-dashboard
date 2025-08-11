@@ -7,8 +7,8 @@
 # ========================================
 FROM node:18-alpine AS frontend-builder
 
-    # Install required dependencies including build tools and openssl
-    RUN apk add --no-cache python3 make g++ curl openssl
+# Install build dependencies
+RUN apk add --no-cache python3 make g++ curl
 
 WORKDIR /app/frontend
 
@@ -22,7 +22,7 @@ RUN npm ci --only=production && npm ci --only=development
 COPY frontend/ ./
 
 # Build frontend with production environment
-ARG REACT_APP_API_URL=http://localhost:3002/api
+ARG REACT_APP_API_URL=http://my.fullship.net/api
 ARG NODE_ENV=production
 ARG GENERATE_SOURCEMAP=false
 
@@ -106,7 +106,7 @@ ENV MAX_WORKERS=1
 ENV SERVE_STATIC=true
 
 # Frontend serving
-ENV REACT_APP_API_URL=http://localhost:3002/api
+ENV REACT_APP_API_URL=http://my.fullship.net/api
 
 # Database configuration (will be overridden by Coolify)
 ENV DB_HOST=postgres
