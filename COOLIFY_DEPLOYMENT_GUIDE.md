@@ -80,20 +80,40 @@ REDIS_URL=redis://redis:6379
 
 ### Step 6: Add PostgreSQL Database
 1. Click **"+ New Resource"** → **"Database"** → **"PostgreSQL"**
-2. **Service Name**: `attendance-postgres`
-3. **PostgreSQL Version**: `15`
-4. **Database Name**: `attendance_dashboard`
-5. **Username**: `attendance_user`
-6. **Password**: `secure_password_2024` (or generate a secure one)
-7. **Port**: `5432`
-8. Click **"Deploy"**
+2. **Name**: `attendance-postgres` (this will be your service name)
+3. **PostgreSQL Version**: `15` (if version selection is available)
+4. **PostgreSQL Database**: `attendance_dashboard` (if separate field exists)
+5. **PostgreSQL Username**: `attendance_user` (if available, otherwise uses default)
+6. **PostgreSQL Password**: `secure_password_2024` (or generate a secure one)
+7. Click **"Deploy"**
+
+> **Note**: Coolify will automatically create a database with the same name as the service if no separate database name is specified. You may need to create the `attendance_dashboard` database and `attendance_user` manually after deployment.
 
 #### 📄 Database Initialization:
-After PostgreSQL is running:
-1. Go to the database service
-2. Click **"Execute Command"**
-3. Upload or paste the contents of `init-database.sql`
-4. Or connect via Adminer/pgAdmin and run the initialization script
+After PostgreSQL is running, you'll need to set up the database and user:
+
+**Option 1: Using Coolify's Database Terminal**
+1. Go to your PostgreSQL service in Coolify
+2. Click **"Terminal"** or **"Execute Command"**
+3. Run these commands:
+```sql
+-- Connect as postgres superuser first
+CREATE DATABASE attendance_dashboard;
+CREATE USER attendance_user WITH PASSWORD 'secure_password_2024';
+GRANT ALL PRIVILEGES ON DATABASE attendance_dashboard TO attendance_user;
+\c attendance_dashboard;
+GRANT ALL ON SCHEMA public TO attendance_user;
+```
+
+**Option 2: Upload init-database.sql**
+1. In the PostgreSQL service, look for **"Volumes"** or **"Files"**
+2. Upload the `init-database.sql` file to `/docker-entrypoint-initdb.d/`
+3. Restart the PostgreSQL service to run initialization
+
+**Option 3: Manual SQL Execution**
+1. Copy the contents of `init-database.sql`
+2. Use Coolify's database terminal to execute the SQL commands
+3. This will create all tables and initial data
 
 ### Step 7: Add Redis Cache
 1. Click **"+ New Resource"** → **"Database"** → **"Redis"**
@@ -108,9 +128,17 @@ After both database services are created, update these environment variables in 
 
 ```bash
 # Update these with the actual service names from Coolify
+# The DB_HOST should match the "Name" you gave your PostgreSQL service
 DB_HOST=attendance-postgres
 REDIS_HOST=attendance-redis
 REDIS_URL=redis://attendance-redis:6379
+
+# If Coolify created a default database, you might need to adjust:
+# DB_NAME=postgres (if default database name)
+# DB_USER=postgres (if default user)
+# Or keep as configured if you manually created the database and user:
+DB_NAME=attendance_dashboard
+DB_USER=attendance_user
 ```
 
 ### Step 9: Configure Domain
@@ -197,9 +225,17 @@ Check in Coolify logs that services are connected:
 **Issue**: Database connection failed
 **Solution**:
 1. Verify PostgreSQL service is running
-2. Check `DB_HOST` matches PostgreSQL service name
-3. Verify database credentials
-4. Run database initialization script
+2. Check `DB_HOST` matches PostgreSQL service name exactly
+3. Verify database credentials:
+   - If using default Coolify setup: `DB_USER=postgres`, `DB_NAME=postgres`
+   - If manually created: `DB_USER=attendance_user`, `DB_NAME=attendance_dashboard`
+4. Check if database and user were created properly:
+   ```sql
+   -- Connect to PostgreSQL service terminal and run:
+   \l -- List all databases
+   \du -- List all users
+   ```
+5. Run database initialization script if tables are missing
 
 **Issue**: Redis connection failed
 **Solution**:
