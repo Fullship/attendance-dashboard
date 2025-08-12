@@ -102,7 +102,7 @@ fi
 
 # Start the full stack
 print_status "Starting full stack with Docker Compose..."
-if docker-compose -f docker-compose.local.yml up -d; then
+if     docker-compose -f docker-compose.local.yml build --no-cache app; then
     print_success "Docker Compose stack started"
 else
     print_error "Failed to start Docker Compose stack"
