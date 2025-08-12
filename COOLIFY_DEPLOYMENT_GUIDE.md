@@ -11,6 +11,8 @@ This guide will walk you through deploying the Attendance Dashboard to Coolify w
 - [x] Cache: Redis integration ready
 - [x] Build tested locally
 
+> **🚨 QUICK FIX for "could not read Username" error**: Your repository might be private. Go to GitHub → Repository Settings → General → Danger Zone → "Change repository visibility" → "Change to public" before deploying.
+
 ---
 
 ## 🎯 Step-by-Step Deployment
@@ -28,10 +30,15 @@ This guide will walk you through deploying the Attendance Dashboard to Coolify w
 
 ### Step 3: Add Application from Git Repository
 1. In your project, click **"+ New Resource"** → **"Application"**
-2. Select **"Public Repository"**
+2. **Repository Access**:
+   - **If Public Repository**: Select **"Public Repository"**
+   - **If Private Repository**: Select **"Private Repository (with Deploy Key)"** or **"GitHub App"**
 3. **Repository URL**: `https://github.com/Fullship/attendance-dashboard`
 4. **Branch**: `main`
 5. **Build Pack**: Select **"Dockerfile"**
+
+> **⚠️ Important**: If you get a "could not read Username" error during deployment, the repository might be private or require authentication. See troubleshooting section below.
+
 6. Click **"Continue"**
 
 ### Step 4: Configure Build Settings
@@ -213,6 +220,32 @@ Check in Coolify logs that services are connected:
 ## 🛠️ Troubleshooting
 
 ### 🔴 Build Failures
+
+**Issue**: `fatal: could not read Username for 'https://github.com': No such device or address`
+**Solution**:
+This means Coolify cannot access your GitHub repository. Try these solutions:
+
+1. **Check Repository Visibility**:
+   - Go to `https://github.com/Fullship/attendance-dashboard/settings`
+   - Under "General" → "Danger Zone" → check if repository is Private
+   - If private, either make it public or set up authentication
+
+2. **Make Repository Public** (Easiest Solution):
+   - Go to repository Settings → General → Danger Zone
+   - Click "Change repository visibility" → "Change to public"
+   - Redeploy in Coolify
+
+3. **Use Deploy Key** (For Private Repos):
+   - In Coolify, when adding the repository, select "Private Repository (with Deploy Key)"
+   - Copy the generated SSH public key
+   - Go to GitHub repo → Settings → Deploy keys → Add deploy key
+   - Paste the key and enable "Allow write access"
+   - Redeploy in Coolify
+
+4. **Use GitHub App** (Alternative):
+   - In Coolify, select "GitHub App" when adding repository
+   - Follow the OAuth flow to authenticate
+   - Grant access to the specific repository
 
 **Issue**: Docker build fails
 **Solution**:
