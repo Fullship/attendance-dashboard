@@ -154,9 +154,9 @@ DB_USER=attendance_user
 1. Go to your application configuration page
 2. Find the **"Domains"** field in the General configuration section
 3. **Option 1 - Use Custom Domain:**
-   - Clear any auto-generated domain
+   - Clear any auto-generated domain (like `c008s4ggwos404sk8wocsksk.45.136.18.66.sslip.io`)
    - Enter: `my.fullship.net`
-   - **Important**: Make sure your DNS A record points to your Coolify server IP
+   - **Important**: Make sure your DNS A record points to your Coolify server IP (`45.136.18.66`)
 4. **Option 2 - Use Generated Domain (for testing):**
    - Click **"Generate Domain"** to get a random subdomain
    - Use this for initial testing, then switch to custom domain later
@@ -165,7 +165,7 @@ DB_USER=attendance_user
    - ✅ **"Force HTTPS Redirect"** should be enabled (if available)
 6. Click **"Save"** or **"Update"**
 
-> **Note**: If you're using a custom domain (`my.fullship.net`), ensure your domain's DNS A record points to your Coolify server's IP address before deployment.
+> **Note**: If you're using a custom domain (`my.fullship.net`), ensure your domain's DNS A record points to your Coolify server's IP address (`45.136.18.66`) before deployment.
 
 ### Step 10: Deploy Application
 1. Go back to your application
@@ -174,6 +174,46 @@ DB_USER=attendance_user
 4. Build should take approximately 2-3 minutes
 
 > **💡 Pro Tip**: If this is your first deployment, consider using a Coolify-generated domain initially to test everything works, then switch to your custom domain (`my.fullship.net`) once you've confirmed the application is working properly.
+
+---
+
+## 🔄 Switching from Generated Domain to Custom Domain
+
+If you've already deployed with a generated domain (like `c008s4ggwos404sk8wocsksk.45.136.18.66.sslip.io`) and want to switch to `my.fullship.net`:
+
+### Step 1: Configure DNS
+1. **Set up DNS A Record**:
+   - Go to your domain registrar (where you bought `my.fullship.net`)
+   - Add/Edit DNS A Record:
+     - **Name**: `my` (or `@` for root domain)
+     - **Type**: `A`
+     - **Value**: `45.136.18.66` (your Coolify server IP)
+     - **TTL**: `300` (5 minutes)
+
+### Step 2: Update Coolify Domain
+1. In Coolify, go to your application
+2. Find the **"Domains"** field
+3. **Replace** the generated domain with: `my.fullship.net`
+4. Click **"Save"**
+
+### Step 3: Update Environment Variable
+1. Go to **"Environment"** tab in your application
+2. **Update** this variable:
+   ```bash
+   REACT_APP_API_URL=https://my.fullship.net/api
+   ```
+   (Change from the generated domain URL)
+3. Click **"Save"**
+
+### Step 4: Redeploy
+1. Click **"Deploy"** to rebuild with new domain
+2. Wait for deployment to complete
+3. SSL certificate will be automatically generated for `my.fullship.net`
+
+### Step 5: Verify
+- Visit: `https://my.fullship.net`
+- Check health: `https://my.fullship.net/health`
+- Ensure no certificate errors
 
 ---
 
@@ -304,9 +344,30 @@ This means Coolify cannot access your GitHub repository. Try these solutions:
 
 **Issue**: Generated domain works but custom domain doesn't
 **Solution**:
-1. DNS configuration issue - check your domain registrar settings
-2. Update `REACT_APP_API_URL` environment variable to match your actual domain
-3. Redeploy after changing environment variables
+1. **DNS Issue**: Check your domain registrar settings
+   ```bash
+   # Verify DNS propagation
+   nslookup my.fullship.net
+   # Should return: 45.136.18.66
+   ```
+2. **Environment Variable**: Update `REACT_APP_API_URL` to match your actual domain
+3. **Domain Format**: Ensure you entered `my.fullship.net` (no http:// prefix)
+4. **Wait for Propagation**: DNS changes can take 5-60 minutes
+5. **Redeploy**: Always redeploy after changing environment variables
+
+**Issue**: "This site can't be reached" or DNS errors
+**Solution**:
+1. **Check DNS Setup**:
+   - Verify A record points to `45.136.18.66`
+   - Wait for DNS propagation (use `dig my.fullship.net` to check)
+2. **Try Different DNS**: Use `8.8.8.8` or `1.1.1.1` temporarily
+3. **Clear DNS Cache**: 
+   ```bash
+   # On Mac/Linux
+   sudo dscacheutil -flushcache
+   # On Windows
+   ipconfig /flushdns
+   ```
 
 **Issue**: SSL certificate not working
 **Solution**:
