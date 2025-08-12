@@ -1,0 +1,39 @@
+# Environment Variables for Coolify Deployment
+# Copy these environment variables to your Coolify project settings
+
+# Application Settings
+NODE_ENV=production
+PORT=3002
+SERVE_STATIC=true
+
+# Domain Configuration  
+REACT_APP_API_URL=http://my.fullship.net/api
+
+# Database Configuration
+DB_HOST=postgres
+DB_PORT=5432
+DB_NAME=attendance_dashboard
+DB_USER=attendance_user
+DB_PASSWORD=secure_password_2024
+
+# Redis Configuration
+REDIS_HOST=redis
+REDIS_PORT=6379
+REDIS_URL=redis://redis:6379
+
+# Security Settings
+JWT_SECRET=your-super-secret-jwt-key-change-in-production
+SESSION_SECRET=your-super-secret-session-key-change-in-production
+
+# Additional Settings
+TZ=UTC
+LOG_LEVEL=info
+
+# Optional: Admin Settings (if needed)
+ADMIN_EMAIL=admin@company.com
+ADMIN_PASSWORD=admin123
+
+# Performance Settings
+CLUSTER_MODE=false
+WORKER_PROCESSES=1
+MAX_MEMORY=512MB
