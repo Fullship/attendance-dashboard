@@ -55,6 +55,8 @@ TZ=UTC
 LOG_LEVEL=info
 ```
 
+> **Note**: If you're using a Coolify-generated domain for testing, update `REACT_APP_API_URL` to match your generated domain (e.g., `http://your-generated-domain.coolify.app/api`)
+
 #### 🔐 Security Variables (CHANGE THESE!):
 ```bash
 JWT_SECRET=your-super-secret-jwt-key-change-in-production-123456789
@@ -142,19 +144,29 @@ DB_USER=attendance_user
 ```
 
 ### Step 9: Configure Domain
-1. Go to your application settings
-2. Navigate to **"Domains"** tab
-3. Click **"+ Add Domain"**
-4. **Domain**: `my.fullship.net`
-5. Enable **"Generate Let's Encrypt Certificate"**
-6. Enable **"Force HTTPS Redirect"**
-7. Click **"Save"**
+1. Go to your application configuration page
+2. Find the **"Domains"** field in the General configuration section
+3. **Option 1 - Use Custom Domain:**
+   - Clear any auto-generated domain
+   - Enter: `my.fullship.net`
+   - **Important**: Make sure your DNS A record points to your Coolify server IP
+4. **Option 2 - Use Generated Domain (for testing):**
+   - Click **"Generate Domain"** to get a random subdomain
+   - Use this for initial testing, then switch to custom domain later
+5. **SSL Configuration:**
+   - ✅ **"Generate Let's Encrypt Certificate"** should be enabled (if available)
+   - ✅ **"Force HTTPS Redirect"** should be enabled (if available)
+6. Click **"Save"** or **"Update"**
+
+> **Note**: If you're using a custom domain (`my.fullship.net`), ensure your domain's DNS A record points to your Coolify server's IP address before deployment.
 
 ### Step 10: Deploy Application
 1. Go back to your application
 2. Click **"Deploy"** button
 3. Monitor the build process in the **"Deployments"** tab
 4. Build should take approximately 2-3 minutes
+
+> **💡 Pro Tip**: If this is your first deployment, consider using a Coolify-generated domain initially to test everything works, then switch to your custom domain (`my.fullship.net`) once you've confirmed the application is working properly.
 
 ---
 
@@ -245,17 +257,30 @@ Check in Coolify logs that services are connected:
 
 ### 🔴 Domain Issues
 
-**Issue**: Domain not accessible
+**Issue**: Custom domain not accessible
 **Solution**:
-1. Verify DNS records point to Coolify server
-2. Check SSL certificate status
-3. Ensure domain is properly configured in Coolify
+1. Verify DNS A record points to Coolify server IP:
+   ```bash
+   # Check DNS resolution
+   nslookup my.fullship.net
+   dig my.fullship.net A
+   ```
+2. Check if domain is properly entered in Coolify (no http:// prefix)
+3. Try using a generated domain first to test the application
+4. Ensure domain propagation is complete (can take up to 24 hours)
+
+**Issue**: Generated domain works but custom domain doesn't
+**Solution**:
+1. DNS configuration issue - check your domain registrar settings
+2. Update `REACT_APP_API_URL` environment variable to match your actual domain
+3. Redeploy after changing environment variables
 
 **Issue**: SSL certificate not working
 **Solution**:
 1. Wait a few minutes for Let's Encrypt provisioning
 2. Check domain DNS propagation
 3. Verify domain is accessible from internet
+4. Try using HTTP first, then enable HTTPS once domain is working
 
 ---
 
