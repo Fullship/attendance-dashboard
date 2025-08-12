@@ -215,6 +215,33 @@ If you've already deployed with a generated domain (like `c008s4ggwos404sk8wocsk
 - Check health: `https://my.fullship.net/health`
 - Ensure no certificate errors
 
+> **⚠️ Important**: If you get "no available server" error, this means Coolify's proxy isn't configured for custom domains. In this case, continue using the generated domain - it's perfectly fine for production use.
+
+### Troubleshooting Domain Issues
+
+### Troubleshooting Domain Issues
+
+**If Custom Domain Shows "no available server":**
+1. **Check Current Domain in Coolify**: Go to your application and see what domain is currently set
+2. **Verify Application is Running**: Check that your application status shows "Running" in Coolify
+3. **Check Coolify Proxy Status**:
+   - In Coolify dashboard, go to **"Servers"** → **"Proxy"** 
+   - Ensure proxy is running (green status)
+   - If red/stopped, click **"Start Proxy"**
+4. **Try Generated Domain**: Test with whatever domain is currently configured in Coolify
+5. **Restart Application**: Click **"Restart"** in your application settings
+
+**Quick Fix - Use Working Domain:**
+1. Go to Coolify → Your Application → **"Domains"** field
+2. See what domain is currently working (might be different than expected)
+3. Update `REACT_APP_API_URL` to match the working domain
+4. Redeploy
+
+**Alternative Solution:**
+- Some Coolify instances only work with `.sslip.io` domains
+- This is perfectly fine for production use
+- Just update your environment variables accordingly
+
 ---
 
 ## 🔍 Post-Deployment Verification
@@ -330,6 +357,50 @@ This means Coolify cannot access your GitHub repository. Try these solutions:
 
 ### 🔴 Domain Issues
 
+**Issue**: "no available server" error when accessing custom domain
+**Solution**:
+This is a common Coolify issue with custom domains. Try these solutions in order:
+
+1. **Check Coolify Proxy Status**:
+   - In Coolify dashboard, go to **"Servers"** → **"Proxy"**
+   - Ensure the proxy is running and healthy
+   - If not running, click **"Start Proxy"**
+
+2. **Use Generated Domain First**:
+   - Switch back to the generated domain (like `c008s4ggwos404sk8wocsksk.45.136.18.66.sslip.io`)
+   - Verify application works with generated domain
+   - Then try custom domain again
+
+3. **Domain Format Check**:
+   - Ensure you entered just `my.fullship.net` (no http:// or https://)
+   - Try adding `www.my.fullship.net` if subdomain doesn't work
+   - Some Coolify instances work better with root domains
+
+4. **Coolify Server Configuration**:
+   - Check if your Coolify instance supports custom domains
+   - Some Coolify installations only work with generated domains
+   - Contact your Coolify administrator
+
+5. **DNS Double-Check**:
+   ```bash
+   # Verify DNS is pointing correctly
+   nslookup my.fullship.net
+   # Should return: 45.136.18.66
+   
+   # Check from different location
+   dig @8.8.8.8 my.fullship.net A
+   ```
+
+6. **Restart Application**:
+   - Go to your application in Coolify
+   - Click **"Restart"** or **"Redeploy"**
+   - Wait for full restart
+
+7. **Alternative: Use Generated Domain**:
+   - If custom domains don't work, use the generated domain
+   - Update `REACT_APP_API_URL=http://c008s4ggwos404sk8wocsksk.45.136.18.66.sslip.io/api`
+   - This is a valid production option
+
 **Issue**: Custom domain not accessible
 **Solution**:
 1. Verify DNS A record points to Coolify server IP:
@@ -409,8 +480,12 @@ SERVE_STATIC=true
 TZ=UTC
 LOG_LEVEL=info
 
-# Frontend
-REACT_APP_API_URL=http://my.fullship.net/api
+# Frontend - Choose ONE based on your domain setup:
+# Option 1: Custom Domain (if working)
+REACT_APP_API_URL=https://my.fullship.net/api
+
+# Option 2: Generated Domain (if custom domain shows "no available server")
+# REACT_APP_API_URL=http://c008s4ggwos404sk8wocsksk.45.136.18.66.sslip.io/api
 
 # Database
 DB_HOST=attendance-postgres
