@@ -2570,6 +2570,94 @@ router.delete('/locations/:id', auth, adminAuth, async (req, res) => {
   }
 });
 
+// Temporary endpoint to create missing tables
+router.post('/setup-missing-tables', auth, adminAuth, async (req, res) => {
+  try {
+    console.log('🔄 Creating missing tables...');
+    
+    // Create locations table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS locations (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(100) NOT NULL UNIQUE,
+        address TEXT,
+        timezone VARCHAR(50) DEFAULT 'UTC',
+        is_active BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log('✅ Locations table created');
+    
+    // Create teams table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS teams (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        description TEXT,
+        location_id INTEGER REFERENCES locations(id),
+        manager_id INTEGER REFERENCES users(id),
+        is_active BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log('✅ Teams table created');
+    
+    // Insert sample locations
+    await pool.query(`
+      INSERT INTO locations (name, address, timezone)
+      VALUES 
+        ('New York Office', '123 Broadway, New York, NY', 'America/New_York'),
+        ('London Office', '456 Oxford Street, London, UK', 'Europe/London'),
+        ('Tokyo Office', '789 Shibuya, Tokyo, Japan', 'Asia/Tokyo'),
+        ('Dubai Office', '101 Sheikh Zayed Road, Dubai, UAE', 'Asia/Dubai')
+      ON CONFLICT (name) DO NOTHING
+    `);
+    console.log('✅ Sample locations inserted');
+    
+    // Insert sample teams
+    await pool.query(`
+      INSERT INTO teams (name, description, location_id, manager_id)
+      VALUES 
+        ('Development', 'Software development team', 1, 1),
+        ('Finance', 'Financial management team', 2, 1),
+        ('Hiring', 'Human resources and hiring team', 3, 1),
+        ('Operations', 'Operations and logistics team', 4, 1)
+      ON CONFLICT DO NOTHING
+    `);
+    console.log('✅ Sample teams inserted');
+    
+    // Add team_id column to users table if not exists
+    await pool.query(`
+      ALTER TABLE users 
+      ADD COLUMN IF NOT EXISTS team_id INTEGER REFERENCES teams(id)
+    `);
+    console.log('✅ Added team_id column to users table');
+    
+    // Update admin user to be part of Development team
+    await pool.query(`
+      UPDATE users SET team_id = 1 WHERE email = 'admin@company.com'
+    `);
+    console.log('✅ Updated admin user team assignment');
+    
+    res.json({ 
+      success: true, 
+      message: 'All missing tables created successfully!',
+      tables: ['locations', 'teams'],
+      sampleData: true
+    });
+    
+  } catch (error) {
+    console.error('❌ Error creating tables:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error creating tables',
+      error: error.message 
+    });
+  }
+});
+
 // Teams management with pagination
 router.get('/teams', auth, adminAuth, async (req, res) => {
   try {
