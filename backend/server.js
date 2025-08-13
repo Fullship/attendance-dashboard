@@ -317,7 +317,27 @@ app.get('/api/health', async (req, res) => {
   try {
     // Check Redis connection
     const redisStatus = await cacheService.ping();
-    const dbConnected = true; // You can add database check here
+    
+    // Check database connection and users table
+    let dbConnected = false;
+    let dbError = null;
+    let usersTableExists = false;
+    let userCount = 0;
+    
+    try {
+      // Test basic database connection
+      const pool = require('./config/database');
+      const testResult = await pool.query('SELECT 1 as test');
+      dbConnected = testResult.rows.length > 0;
+      
+      // Test if users table exists and has data
+      const usersResult = await pool.query('SELECT COUNT(*) as count FROM users');
+      usersTableExists = true;
+      userCount = parseInt(usersResult.rows[0].count);
+    } catch (error) {
+      dbError = error.message;
+      console.log('Database health check error:', error.message);
+    }
 
     // Get monitoring health status
     const monitoringHealth = monitoringInstrumentation.getHealthStatus();
@@ -328,6 +348,12 @@ app.get('/api/health', async (req, res) => {
       services: {
         redis: redisStatus ? 'connected' : 'disconnected',
         database: dbConnected ? 'connected' : 'disconnected',
+      },
+      database: {
+        connected: dbConnected,
+        usersTableExists: usersTableExists,
+        userCount: userCount,
+        error: dbError
       },
       monitoring: monitoringHealth,
       uptime: process.uptime(),
