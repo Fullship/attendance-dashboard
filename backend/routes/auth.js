@@ -8,6 +8,30 @@ const pool = require('../config/database');
 
 const router = express.Router();
 
+// Function to determine password column name
+async function getPasswordColumnName() {
+  try {
+    const result = await pool.query(`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'users' 
+      AND column_name IN ('password', 'password_hash')
+    `);
+    
+    if (result.rows.length === 0) {
+      throw new Error('No password column found in users table');
+    }
+    
+    // Prefer 'password_hash' if both exist, otherwise use whatever is available
+    const columns = result.rows.map(row => row.column_name);
+    return columns.includes('password_hash') ? 'password_hash' : columns[0];
+  } catch (error) {
+    console.error('Error determining password column:', error);
+    // Default fallback
+    return 'password';
+  }
+}
+
 // Create email transporter
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST,
@@ -44,9 +68,12 @@ router.post('/register', [
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Create user
+    // Determine password column name dynamically
+    const passwordColumn = await getPasswordColumnName();
+
+    // Create user with dynamic column name
     const result = await pool.query(
-      'INSERT INTO users (email, password, first_name, last_name) VALUES ($1, $2, $3, $4) RETURNING id, email, first_name, last_name, is_admin',
+      `INSERT INTO users (email, ${passwordColumn}, first_name, last_name) VALUES ($1, $2, $3, $4) RETURNING id, email, first_name, last_name, is_admin`,
       [email, hashedPassword, firstName, lastName]
     );
 
@@ -97,12 +124,20 @@ router.post('/login', [
     console.log('User query result rows:', result.rows.length);
     console.log('Full user object:', JSON.stringify(user, null, 2));
     console.log('password exists?', user.password !== undefined);
+    console.log('password_hash exists?', user.password_hash !== undefined);
     console.log('password value:', user.password);
+    console.log('password_hash value:', user.password_hash);
     console.log('Input password:', password);
     console.log('==================');
 
-    // Check password
-    const isMatch = await bcrypt.compare(password, user.password);
+    // Check password - handle both 'password' and 'password_hash' column names
+    const hashedPassword = user.password || user.password_hash;
+    if (!hashedPassword) {
+      console.error('No password field found in user record');
+      return res.status(400).json({ message: 'Invalid credentials' });
+    }
+
+    const isMatch = await bcrypt.compare(password, hashedPassword);
     if (!isMatch) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
