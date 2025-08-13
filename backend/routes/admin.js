@@ -2617,16 +2617,23 @@ router.post('/setup-missing-tables', auth, adminAuth, async (req, res) => {
     console.log('✅ Sample locations inserted');
     
     // Insert sample teams
-    await pool.query(`
-      INSERT INTO teams (name, description, location_id, manager_id)
-      VALUES 
-        ('Development', 'Software development team', 1, 1),
-        ('Finance', 'Financial management team', 2, 1),
-        ('Hiring', 'Human resources and hiring team', 3, 1),
-        ('Operations', 'Operations and logistics team', 4, 1)
-      ON CONFLICT DO NOTHING
+    const teamsResult = await pool.query(`
+      SELECT COUNT(*) as count FROM teams
     `);
-    console.log('✅ Sample teams inserted');
+    
+    if (parseInt(teamsResult.rows[0].count) === 0) {
+      await pool.query(`
+        INSERT INTO teams (name, description, location_id, manager_id)
+        VALUES 
+          ('Development', 'Software development team', 1, 1),
+          ('Finance', 'Financial management team', 2, 1),
+          ('Hiring', 'Human resources and hiring team', 3, 1),
+          ('Operations', 'Operations and logistics team', 4, 1)
+      `);
+      console.log('✅ Sample teams inserted');
+    } else {
+      console.log('✅ Teams already exist, skipping insertion');
+    }
     
     // Add team_id column to users table if not exists
     await pool.query(`
