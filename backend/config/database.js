@@ -53,7 +53,28 @@ const queryStats = {
 };
 
 // Optimized pool configuration for better performance
-const pool = new Pool({
+const poolConfig = process.env.DATABASE_URL ? {
+  // Use DATABASE_URL if provided
+  connectionString: process.env.DATABASE_URL,
+  // SSL Configuration for connection string
+  ssl: process.env.DB_SSL === 'false' ? false : 
+       process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } :
+       process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  
+  // Performance optimizations
+  max: 20, // Maximum number of clients in the pool
+  min: 5, // Minimum number of clients in the pool
+  idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
+  connectionTimeoutMillis: 10000, // Return an error after 10 seconds if connection cannot be established
+  maxUses: 7500, // Close (and replace) a connection after it has been used 7500 times
+
+  // Additional performance settings
+  statement_timeout: 60000, // 60 seconds timeout for queries
+  query_timeout: 60000, // 60 seconds timeout for queries
+  keepAlive: true,
+  keepAliveInitialDelayMillis: 10000,
+} : {
+  // Use individual environment variables
   host: process.env.DB_HOST,
   port: parseInt(process.env.DB_PORT),
   database: process.env.DB_NAME,
@@ -77,7 +98,11 @@ const pool = new Pool({
   query_timeout: 60000, // 60 seconds timeout for queries
   keepAlive: true,
   keepAliveInitialDelayMillis: 10000,
-});
+};
+
+console.log('Database connection config:', process.env.DATABASE_URL ? 'Using DATABASE_URL' : 'Using individual env vars');
+
+const pool = new Pool(poolConfig);
 
 // Enhanced query method with instrumentation and N+1 detection
 const originalQuery = pool.query.bind(pool);
