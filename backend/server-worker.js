@@ -220,6 +220,14 @@ app.get('/health', async (req, res) => {
     try {
       // Test basic database connection
       const pool = require('./config/database');
+      console.log('Attempting database connection with:', {
+        host: process.env.DB_HOST,
+        port: process.env.DB_PORT,
+        database: process.env.DB_NAME,
+        user: process.env.DB_USER,
+        passwordSet: !!process.env.DB_PASSWORD
+      });
+      
       const testResult = await pool.query('SELECT 1 as test');
       dbConnected = testResult.rows.length > 0;
       
@@ -230,6 +238,7 @@ app.get('/health', async (req, res) => {
     } catch (error) {
       dbError = error.message;
       console.log('Database health check error:', error.message);
+      console.log('Full error:', error);
     }
 
     const health = {
