@@ -939,7 +939,7 @@ async function processBatch(
               // Create the user using INSERT ... ON CONFLICT to handle race conditions
               const newUserResult = await pool.query(
                 `
-                INSERT INTO users (email, first_name, last_name, password, is_admin) 
+                INSERT INTO users (email, first_name, last_name, password_hash, is_admin) 
                 VALUES ($1, $2, $3, $4, $5) 
                 ON CONFLICT (email) 
                 DO UPDATE SET 
@@ -1365,7 +1365,7 @@ router.post('/employees', auth, adminAuth, async (req, res) => {
 
     // Create user
     const result = await pool.query(
-      `INSERT INTO users (first_name, last_name, email, password, is_admin, created_at, updated_at) 
+      `INSERT INTO users (first_name, last_name, email, password_hash, is_admin, created_at, updated_at) 
        VALUES ($1, $2, $3, $4, $5, NOW(), NOW()) 
        RETURNING id, first_name, last_name, email, is_admin, created_at`,
       [firstName.trim(), lastName.trim(), email.toLowerCase(), hashedPassword, isAdmin]
@@ -5860,7 +5860,7 @@ router.post('/debug-create-employee', async (req, res) => {
 
     // Create user
     const result = await pool.query(
-      `INSERT INTO users (first_name, last_name, email, password, is_admin, created_at, updated_at) 
+      `INSERT INTO users (first_name, last_name, email, password_hash, is_admin, created_at, updated_at) 
        VALUES ($1, $2, $3, $4, $5, NOW(), NOW()) 
        RETURNING id, first_name, last_name, email, is_admin, created_at`,
       [firstName.trim(), lastName.trim(), email.toLowerCase(), hashedPassword, isAdmin]
