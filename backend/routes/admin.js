@@ -2587,7 +2587,15 @@ router.post('/setup-missing-tables', auth, adminAuth, async (req, res) => {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
-    console.log('✅ Locations table created');
+    
+    // Add missing columns to locations table if they don't exist
+    await pool.query(`
+      ALTER TABLE locations 
+      ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE,
+      ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    `);
+    console.log('✅ Locations table created/updated');
     
     // Create teams table
     await pool.query(`
