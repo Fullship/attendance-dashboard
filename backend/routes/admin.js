@@ -2602,7 +2602,13 @@ router.post('/setup-missing-tables', auth, adminAuth, async (req, res) => {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
-    console.log('✅ Teams table created');
+    
+    // Add is_active column if it doesn't exist (for existing tables)
+    await pool.query(`
+      ALTER TABLE teams 
+      ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE
+    `);
+    console.log('✅ Teams table created/updated');
     
     // Create file_uploads table
     await pool.query(`
