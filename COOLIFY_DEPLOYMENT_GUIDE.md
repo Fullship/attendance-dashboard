@@ -357,6 +357,25 @@ This means Coolify cannot access your GitHub repository. Try these solutions:
 
 ### 🔴 Domain Issues
 
+**Issue**: Mixed Content error - "requested an insecure XMLHttpRequest endpoint"
+**Solution**:
+This occurs when your site loads over HTTPS but tries to make HTTP API calls.
+
+1. **Update Environment Variable**:
+   ```bash
+   # Change from HTTP to HTTPS
+   REACT_APP_API_URL=https://my.fullship.net/api
+   ```
+   
+2. **In Coolify**:
+   - Go to Environment Variables
+   - Update `REACT_APP_API_URL` to use `https://` instead of `http://`
+   - Redeploy the application
+
+3. **Verify SSL Certificate**:
+   - Ensure your domain has a valid SSL certificate
+   - Coolify should auto-generate Let's Encrypt certificates
+
 **Issue**: "no available server" error when accessing custom domain
 **Solution**:
 This is a common Coolify issue with custom domains. Try these solutions in order:

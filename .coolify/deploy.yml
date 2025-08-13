@@ -10,7 +10,7 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3002
-      - REACT_APP_API_URL=http://my.fullship.net/api
+      - REACT_APP_API_URL=https://my.fullship.net/api
     ports:
       - "3002:3002"
     depends_on:
