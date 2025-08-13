@@ -377,6 +377,32 @@ This occurs when your site loads over HTTPS but tries to make HTTP API calls.
    - Ensure your domain has a valid SSL certificate
    - Coolify should auto-generate Let's Encrypt certificates
 
+**Issue**: 500 Internal Server Error on login (after HTTPS fixes)
+**Solution**:
+This indicates missing backend environment variables:
+
+1. **Check Critical Variables in Coolify**:
+   ```bash
+   # Required for authentication to work
+   JWT_SECRET=your-super-secret-jwt-key-change-in-production
+   
+   # Required for database connection
+   DB_HOST=attendance-postgres
+   DB_NAME=attendance_dashboard
+   DB_USER=attendance_user
+   DB_PASSWORD=secure_password_2024
+   
+   # Required for CORS
+   FRONTEND_URL=https://my.fullship.net
+   ```
+
+2. **Use diagnostic script** (if you have shell access):
+   ```bash
+   ./check-backend-env.sh
+   ```
+
+3. **Check Coolify logs** for specific error details
+
 **Issue**: "no available server" error when accessing custom domain
 **Solution**:
 This is a common Coolify issue with custom domains. Try these solutions in order:
