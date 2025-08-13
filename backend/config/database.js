@@ -101,6 +101,8 @@ const poolConfig = process.env.DATABASE_URL ? {
 };
 
 console.log('Database connection config:', process.env.DATABASE_URL ? 'Using DATABASE_URL' : 'Using individual env vars');
+console.log('DATABASE_URL exists:', !!process.env.DATABASE_URL);
+console.log('DATABASE_URL value (first 50 chars):', process.env.DATABASE_URL ? process.env.DATABASE_URL.substring(0, 50) + '...' : 'undefined');
 
 const pool = new Pool(poolConfig);
 
