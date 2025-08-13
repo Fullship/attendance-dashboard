@@ -44,7 +44,7 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        REACT_APP_API_URL: http://my.fullship.net/api
+        REACT_APP_API_URL: https://my.fullship.net/api
     restart: unless-stopped
     environment:
       NODE_ENV: production

@@ -7,7 +7,7 @@ PORT=3002
 SERVE_STATIC=true
 
 # Domain Configuration  
-REACT_APP_API_URL=http://my.fullship.net/api
+REACT_APP_API_URL=https://my.fullship.net/api
 
 # Database Configuration
 DB_HOST=postgres
