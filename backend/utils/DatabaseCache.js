@@ -141,7 +141,7 @@ class DatabaseCache {
         const query = `
           SELECT 
             ar.id, ar.user_id, ar.date, ar.clock_in, ar.clock_out,
-            ar.hours_worked, ar.status, ar.notes,
+            ar.total_hours, ar.status, ar.notes,
             u.first_name, u.last_name, u.email
           FROM attendance_records ar
           JOIN users u ON ar.user_id = u.id
@@ -173,7 +173,7 @@ class DatabaseCache {
             date: record.date,
             clock_in: record.clock_in,
             clock_out: record.clock_out,
-            hours_worked: record.hours_worked,
+            hours_worked: record.total_hours,
             status: record.status,
             notes: record.notes,
             employee: {
