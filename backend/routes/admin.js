@@ -2352,7 +2352,7 @@ router.delete('/work-schedules/:id', auth, adminAuth, async (req, res) => {
 // Locations management with pagination
 router.get('/locations', auth, adminAuth, async (req, res) => {
   try {
-    const { page = 1, limit = 20, search = '', timezone, isActive = true } = req.query;
+    const { page = 1, limit = 20, search = '', timezone } = req.query;
 
     const pageInt = Math.max(1, parseInt(page) || 1);
     const limitInt = Math.max(1, parseInt(limit) || 20);
@@ -2364,19 +2364,12 @@ router.get('/locations', auth, adminAuth, async (req, res) => {
              COUNT(DISTINCT t.id) as team_count
       FROM locations l
       LEFT JOIN users u ON l.id = u.location_id AND u.is_admin = false
-      LEFT JOIN teams t ON l.id = t.location_id AND t.is_active = true
+      LEFT JOIN teams t ON l.id = t.location_id
       WHERE 1=1
     `;
 
     const params = [];
     let paramIndex = 1;
-
-    // Filter by active status
-    if (isActive !== 'all') {
-      query += ` AND l.is_active = $${paramIndex}`;
-      params.push(isActive === 'true');
-      paramIndex++;
-    }
 
     // Search filter
     if (search) {
@@ -2393,7 +2386,7 @@ router.get('/locations', auth, adminAuth, async (req, res) => {
     }
 
     query += `
-      GROUP BY l.id, l.name, l.address, l.timezone, l.is_active, l.created_at, l.updated_at
+      GROUP BY l.id, l.name, l.address, l.timezone, l.created_at
       ORDER BY l.name
       LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
     `;
@@ -2407,12 +2400,6 @@ router.get('/locations', auth, adminAuth, async (req, res) => {
     `;
     const countParams = [];
     let countParamIndex = 1;
-
-    if (isActive !== 'all') {
-      countQuery += ` AND l.is_active = $${countParamIndex}`;
-      countParams.push(isActive === 'true');
-      countParamIndex++;
-    }
 
     if (search) {
       countQuery += ` AND (l.name ILIKE $${countParamIndex} OR l.address ILIKE $${countParamIndex})`;
@@ -2437,10 +2424,10 @@ router.get('/locations', auth, adminAuth, async (req, res) => {
       id: row.id,
       name: row.name,
       address: row.address,
+      city: row.city,
+      country: row.country,
       timezone: row.timezone,
-      isActive: row.is_active,
       createdAt: row.created_at,
-      updatedAt: row.updated_at,
       employeeCount: parseInt(row.employee_count),
       teamCount: parseInt(row.team_count),
     }));
