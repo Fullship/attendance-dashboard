@@ -2686,9 +2686,10 @@ router.post('/setup-missing-tables', auth, adminAuth, async (req, res) => {
     // Add team_id column to users table if not exists
     await pool.query(`
       ALTER TABLE users 
-      ADD COLUMN IF NOT EXISTS team_id INTEGER REFERENCES teams(id)
+      ADD COLUMN IF NOT EXISTS team_id INTEGER REFERENCES teams(id),
+      ADD COLUMN IF NOT EXISTS location_id INTEGER REFERENCES locations(id)
     `);
-    console.log('✅ Added team_id column to users table');
+    console.log('✅ Added team_id and location_id columns to users table');
     
     // Update admin user to be part of Development team
     await pool.query(`
