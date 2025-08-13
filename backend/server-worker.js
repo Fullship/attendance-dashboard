@@ -209,36 +209,73 @@ if (IS_CLUSTER_WORKER && redisClient) {
 app.use(session(sessionConfig));
 
 // Health check endpoint with cluster info and monitoring status
-app.get('/health', (req, res) => {
-  const health = {
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    worker: {
-      id: WORKER_ID,
-      pid: process.pid,
-      clustered: IS_CLUSTER_WORKER,
-      uptime: process.uptime(),
-      memory: process.memoryUsage(),
-    },
-    version: process.env.npm_package_version || '1.0.0',
-    environment: process.env.NODE_ENV || 'development',
-    monitoring: {
-      requestInstrumentation: !!global.monitoringInstrumentation,
-      memoryMonitoring: !!global.memoryMonitoring,
-      metricsCollection: !!global.metricsEnabled,
-      profilingReady: !!global.profilingManager,
-      instrumentationActive: process.env.MONITORING_ENABLED !== 'false',
-      cachingEnabled: !!global.redisCache,
-      performanceOptimized: !!global.performanceEnabled
-    },
-    cluster: IS_CLUSTER_WORKER ? {
-      workerId: cluster.worker?.id,
-      totalWorkers: process.env.CLUSTER_WORKERS || 'auto',
-      restartCount: cluster.worker?.exitedAfterDisconnect ? 'restarted' : 'initial'
-    } : null
-  };
+app.get('/health', async (req, res) => {
+  try {
+    // Check database connection and users table
+    let dbConnected = false;
+    let dbError = null;
+    let usersTableExists = false;
+    let userCount = 0;
+    
+    try {
+      // Test basic database connection
+      const pool = require('./config/database');
+      const testResult = await pool.query('SELECT 1 as test');
+      dbConnected = testResult.rows.length > 0;
+      
+      // Test if users table exists and has data
+      const usersResult = await pool.query('SELECT COUNT(*) as count FROM users');
+      usersTableExists = true;
+      userCount = parseInt(usersResult.rows[0].count);
+    } catch (error) {
+      dbError = error.message;
+      console.log('Database health check error:', error.message);
+    }
 
-  res.json(health);
+    const health = {
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      worker: {
+        id: WORKER_ID,
+        pid: process.pid,
+        clustered: IS_CLUSTER_WORKER,
+        uptime: process.uptime(),
+        memory: process.memoryUsage(),
+      },
+      database: {
+        connected: dbConnected,
+        usersTableExists: usersTableExists,
+        userCount: userCount,
+        error: dbError
+      },
+      version: process.env.npm_package_version || '1.0.0',
+      environment: process.env.NODE_ENV || 'development',
+      monitoring: {
+        requestInstrumentation: !!global.monitoringInstrumentation,
+        memoryMonitoring: !!global.memoryMonitoring,
+        metricsCollection: !!global.metricsEnabled,
+        profilingReady: !!global.profilingManager,
+        instrumentationActive: process.env.MONITORING_ENABLED !== 'false',
+        cachingEnabled: !!global.redisCache,
+        performanceOptimized: !!global.performanceEnabled
+      },
+      cluster: IS_CLUSTER_WORKER ? {
+        workerId: cluster.worker?.id,
+        totalWorkers: process.env.CLUSTER_WORKERS || 'auto',
+        restartCount: cluster.worker?.exitedAfterDisconnect ? 'restarted' : 'initial'
+      } : null
+    };
+
+    res.json(health);
+  } catch (error) {
+    console.error('Health check failed:', error);
+    res.status(500).json({
+      status: 'ERROR',
+      timestamp: new Date().toISOString(),
+      worker: WORKER_ID,
+      error: error.message,
+    });
+  }
 });
 
 // Worker-specific status endpoint
