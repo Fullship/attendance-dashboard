@@ -2722,6 +2722,54 @@ router.post('/setup-missing-tables', auth, adminAuth, async (req, res) => {
   }
 });
 
+// Debug endpoint for locations
+router.get('/debug-locations', auth, adminAuth, async (req, res) => {
+  try {
+    console.log('🔍 Debug: Testing locations query...');
+    
+    // Test 1: Basic locations table
+    const locationsResult = await pool.query('SELECT * FROM locations');
+    console.log('✅ Locations query successful, rows:', locationsResult.rows.length);
+    
+    // Test 2: Check locations columns
+    const columnsResult = await pool.query(`
+      SELECT column_name, data_type 
+      FROM information_schema.columns 
+      WHERE table_name = 'locations'
+      ORDER BY ordinal_position
+    `);
+    console.log('✅ Locations columns:', columnsResult.rows);
+    
+    // Test 3: Check users table for location_id
+    const usersColumnsResult = await pool.query(`
+      SELECT column_name, data_type 
+      FROM information_schema.columns 
+      WHERE table_name = 'users'
+      ORDER BY ordinal_position
+    `);
+    console.log('✅ Users columns:', usersColumnsResult.rows);
+    
+    res.json({
+      success: true,
+      debug: {
+        locationsCount: locationsResult.rows.length,
+        locations: locationsResult.rows,
+        locationsColumns: columnsResult.rows,
+        usersColumns: usersColumnsResult.rows
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Debug locations error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Debug error',
+      error: error.message,
+      details: error.detail || 'No additional details'
+    });
+  }
+});
+
 // Debug endpoint to test metrics and employees queries
 router.get('/debug-queries', auth, adminAuth, async (req, res) => {
   try {
