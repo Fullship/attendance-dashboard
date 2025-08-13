@@ -2705,6 +2705,71 @@ router.post('/setup-missing-tables', auth, adminAuth, async (req, res) => {
   }
 });
 
+// Debug endpoint to test teams query
+router.get('/debug-teams', auth, adminAuth, async (req, res) => {
+  try {
+    console.log('🔍 Debug: Testing teams query step by step...');
+    
+    // Test 1: Basic teams table
+    const teamsResult = await pool.query('SELECT * FROM teams');
+    console.log('✅ Teams table query successful, rows:', teamsResult.rows.length);
+    
+    // Test 2: Teams with locations
+    const teamsWithLocations = await pool.query(`
+      SELECT t.*, l.name as location_name 
+      FROM teams t 
+      LEFT JOIN locations l ON t.location_id = l.id
+    `);
+    console.log('✅ Teams with locations query successful, rows:', teamsWithLocations.rows.length);
+    
+    // Test 3: Teams with managers
+    const teamsWithManagers = await pool.query(`
+      SELECT t.*, m.first_name as manager_first_name, m.last_name as manager_last_name
+      FROM teams t 
+      LEFT JOIN users m ON t.manager_id = m.id
+    `);
+    console.log('✅ Teams with managers query successful, rows:', teamsWithManagers.rows.length);
+    
+    // Test 4: Full query but simplified
+    const fullResult = await pool.query(`
+      SELECT t.*, 
+             l.name as location_name, l.timezone as location_timezone,
+             m.first_name as manager_first_name, m.last_name as manager_last_name,
+             COUNT(DISTINCT u.id) as employee_count
+      FROM teams t
+      LEFT JOIN locations l ON t.location_id = l.id
+      LEFT JOIN users m ON t.manager_id = m.id
+      LEFT JOIN users u ON t.id = u.team_id AND u.is_admin = false
+      WHERE t.is_active = true
+      GROUP BY t.id, t.name, t.location_id, t.description, t.manager_id, t.is_active, 
+               t.created_at, t.updated_at, l.name, l.timezone, 
+               m.first_name, m.last_name
+      ORDER BY l.name NULLS LAST, t.name
+    `);
+    console.log('✅ Full query successful, rows:', fullResult.rows.length);
+    
+    res.json({
+      success: true,
+      debug: {
+        teamsCount: teamsResult.rows.length,
+        teamsWithLocationsCount: teamsWithLocations.rows.length,
+        teamsWithManagersCount: teamsWithManagers.rows.length,
+        fullResultCount: fullResult.rows.length
+      },
+      teams: fullResult.rows
+    });
+    
+  } catch (error) {
+    console.error('❌ Debug teams error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Debug error',
+      error: error.message,
+      details: error.detail || 'No additional details'
+    });
+  }
+});
+
 // Teams management with pagination
 router.get('/teams', auth, adminAuth, async (req, res) => {
   try {
