@@ -10,11 +10,15 @@ SERVE_STATIC=true
 REACT_APP_API_URL=https://my.fullship.net/api
 
 # Database Configuration
-DB_HOST=postgres
+# Use DATABASE_URL for Coolify PostgreSQL service (recommended)
+DATABASE_URL=postgres://attendance_user:YOUR_ACTUAL_PASSWORD@YOUR_POSTGRES_HOST:5432/postgres
+
+# Individual database settings (fallback)
+DB_HOST=YOUR_POSTGRES_HOST
 DB_PORT=5432
-DB_NAME=attendance_dashboard
+DB_NAME=postgres
 DB_USER=attendance_user
-DB_PASSWORD=secure_password_2024
+DB_PASSWORD=YOUR_ACTUAL_PASSWORD
 
 # Redis Configuration
 REDIS_HOST=redis
