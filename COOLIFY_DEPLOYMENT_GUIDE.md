@@ -370,6 +370,7 @@ This occurs when your site loads over HTTPS but tries to make HTTP API calls.
 2. **In Coolify**:
    - Go to Environment Variables
    - Update `REACT_APP_API_URL` to use `https://` instead of `http://`
+   - Update `FRONTEND_URL` to use `https://` instead of `http://`
    - Redeploy the application
 
 3. **Verify SSL Certificate**:
@@ -502,9 +503,11 @@ LOG_LEVEL=info
 # Frontend - Choose ONE based on your domain setup:
 # Option 1: Custom Domain (if working)
 REACT_APP_API_URL=https://my.fullship.net/api
+FRONTEND_URL=https://my.fullship.net
 
 # Option 2: Generated Domain (if custom domain shows "no available server")
 # REACT_APP_API_URL=http://c008s4ggwos404sk8wocsksk.45.136.18.66.sslip.io/api
+# FRONTEND_URL=http://c008s4ggwos404sk8wocsksk.45.136.18.66.sslip.io
 
 # Database
 DB_HOST=attendance-postgres
