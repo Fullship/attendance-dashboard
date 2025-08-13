@@ -2604,6 +2604,39 @@ router.post('/setup-missing-tables', auth, adminAuth, async (req, res) => {
     `);
     console.log('✅ Teams table created');
     
+    // Create file_uploads table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS file_uploads (
+        id SERIAL PRIMARY KEY,
+        filename VARCHAR(255) NOT NULL,
+        original_name VARCHAR(255) NOT NULL,
+        file_path VARCHAR(500) NOT NULL,
+        uploaded_by INTEGER REFERENCES users(id),
+        upload_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        file_size BIGINT,
+        file_type VARCHAR(50),
+        status VARCHAR(20) DEFAULT 'completed'
+      )
+    `);
+    console.log('✅ File uploads table created');
+    
+    // Create clock_requests table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS clock_requests (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id),
+        request_type VARCHAR(20) NOT NULL CHECK (request_type IN ('clock_in', 'clock_out')),
+        requested_time TIMESTAMP NOT NULL,
+        reason TEXT,
+        status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+        reviewed_by INTEGER REFERENCES users(id),
+        admin_notes TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log('✅ Clock requests table created');
+    
     // Insert sample locations
     const locationsResult = await pool.query(`
       SELECT COUNT(*) as count FROM locations
@@ -2658,7 +2691,7 @@ router.post('/setup-missing-tables', auth, adminAuth, async (req, res) => {
     res.json({ 
       success: true, 
       message: 'All missing tables created successfully!',
-      tables: ['locations', 'teams'],
+      tables: ['locations', 'teams', 'file_uploads', 'clock_requests'],
       sampleData: true
     });
     
