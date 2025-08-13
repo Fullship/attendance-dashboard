@@ -5701,6 +5701,92 @@ router.get('/logs', auth, adminAuth, async (req, res) => {
   }
 });
 
+// Debug endpoint for fixing users table structure
+router.post('/debug-fix-users-table', async (req, res) => {
+  try {
+    console.log('Checking and fixing users table structure...');
+
+    // Check current table structure
+    const tableInfo = await pool.query(`
+      SELECT column_name, data_type, is_nullable, column_default 
+      FROM information_schema.columns 
+      WHERE table_name = 'users' 
+      ORDER BY ordinal_position
+    `);
+    
+    const existingColumns = tableInfo.rows.map(row => row.column_name);
+    console.log('Existing columns in users table:', existingColumns);
+
+    const requiredColumns = [
+      { name: 'password', type: 'VARCHAR(255)', nullable: false },
+      { name: 'employee_id', type: 'VARCHAR(50)' },
+      { name: 'position', type: 'VARCHAR(100)' },
+      { name: 'department', type: 'VARCHAR(100)' },
+      { name: 'hire_date', type: 'DATE' },
+      { name: 'phone', type: 'VARCHAR(20)' },
+      { name: 'address', type: 'TEXT' },
+      { name: 'salary', type: 'DECIMAL(10,2)' },
+      { name: 'team_id', type: 'INTEGER' },
+      { name: 'location_id', type: 'INTEGER' },
+      { name: 'work_hours_start', type: 'TIME' },
+      { name: 'work_hours_end', type: 'TIME' },
+      { name: 'timezone', type: 'VARCHAR(50)', default: "'UTC'" },
+      { name: 'is_active', type: 'BOOLEAN', default: 'true' }
+    ];
+
+    const addedColumns = [];
+    
+    for (const column of requiredColumns) {
+      if (!existingColumns.includes(column.name)) {
+        try {
+          let query = `ALTER TABLE users ADD COLUMN ${column.name} ${column.type}`;
+          
+          if (column.nullable === false) {
+            query += ' NOT NULL';
+          }
+          
+          if (column.default) {
+            query += ` DEFAULT ${column.default}`;
+          }
+
+          console.log(`Adding column: ${query}`);
+          await pool.query(query);
+          addedColumns.push(column.name);
+        } catch (columnError) {
+          console.error(`Error adding column ${column.name}:`, columnError.message);
+        }
+      }
+    }
+
+    // Check final table structure
+    const finalTableInfo = await pool.query(`
+      SELECT column_name, data_type, is_nullable, column_default 
+      FROM information_schema.columns 
+      WHERE table_name = 'users' 
+      ORDER BY ordinal_position
+    `);
+
+    res.json({
+      message: 'Users table structure checked and updated',
+      addedColumns,
+      allColumns: finalTableInfo.rows.map(row => ({
+        name: row.column_name,
+        type: row.data_type,
+        nullable: row.is_nullable,
+        default: row.column_default
+      }))
+    });
+
+  } catch (error) {
+    console.error('Error fixing users table:', error);
+    res.status(500).json({
+      message: 'Error fixing users table',
+      error: error.message,
+      stack: error.stack
+    });
+  }
+});
+
 // Debug endpoint for testing employee creation (no auth required)
 router.post('/debug-create-employee', async (req, res) => {
   try {
