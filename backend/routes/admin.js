@@ -2603,10 +2603,12 @@ router.post('/setup-missing-tables', auth, adminAuth, async (req, res) => {
       )
     `);
     
-    // Add is_active column if it doesn't exist (for existing tables)
+    // Add missing columns to teams table if they don't exist
     await pool.query(`
       ALTER TABLE teams 
-      ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE
+      ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE,
+      ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     `);
     console.log('✅ Teams table created/updated');
     
