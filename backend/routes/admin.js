@@ -2713,6 +2713,60 @@ router.post('/setup-missing-tables', auth, adminAuth, async (req, res) => {
   }
 });
 
+// Debug endpoint to test metrics and employees queries
+router.get('/debug-queries', auth, adminAuth, async (req, res) => {
+  try {
+    console.log('🔍 Debug: Testing metrics and employees queries...');
+    
+    // Test 1: Basic attendance_records table
+    const attendanceResult = await pool.query('SELECT COUNT(*) FROM attendance_records');
+    console.log('✅ Attendance records count:', attendanceResult.rows[0].count);
+    
+    // Test 2: Users table
+    const usersResult = await pool.query('SELECT COUNT(*) FROM users WHERE is_admin = FALSE');
+    console.log('✅ Non-admin users count:', usersResult.rows[0].count);
+    
+    // Test 3: Simple metrics query
+    const simpleMetrics = await pool.query(`
+      SELECT 
+        COUNT(DISTINCT u.id) as total_employees,
+        COUNT(ar.id) as total_records
+      FROM users u
+      LEFT JOIN attendance_records ar ON u.id = ar.user_id
+      WHERE u.is_admin = FALSE
+    `);
+    console.log('✅ Simple metrics query successful');
+    
+    // Test 4: Check attendance_records columns
+    const columnsResult = await pool.query(`
+      SELECT column_name, data_type 
+      FROM information_schema.columns 
+      WHERE table_name = 'attendance_records'
+      ORDER BY ordinal_position
+    `);
+    console.log('✅ Attendance records columns:', columnsResult.rows);
+    
+    res.json({
+      success: true,
+      debug: {
+        attendanceRecordsCount: attendanceResult.rows[0].count,
+        nonAdminUsersCount: usersResult.rows[0].count,
+        simpleMetrics: simpleMetrics.rows[0],
+        attendanceColumns: columnsResult.rows
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Debug queries error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Debug error',
+      error: error.message,
+      details: error.detail || 'No additional details'
+    });
+  }
+});
+
 // Debug endpoint to test teams query
 router.get('/debug-teams', auth, adminAuth, async (req, res) => {
   try {
