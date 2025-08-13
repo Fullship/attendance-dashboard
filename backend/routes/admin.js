@@ -131,7 +131,7 @@ router.get('/employees', auth, adminAuth, async (req, res) => {
              COUNT(ar.id) FILTER (WHERE ar.status = 'absent') as absent_days,
              COUNT(ar.id) FILTER (WHERE ar.status = 'late') as late_days,
              COUNT(ar.id) FILTER (WHERE ar.status = 'early_leave') as early_leave_days,
-             AVG(ar.hours_worked) FILTER (WHERE ar.hours_worked > 0) as avg_hours,
+             AVG(ar.total_hours) FILTER (WHERE ar.total_hours > 0) as avg_hours,
              COUNT(DISTINCT ar.date) as unique_days,
              MIN(ar.date) as first_attendance_date,
              MAX(ar.date) as last_attendance_date
@@ -1727,7 +1727,7 @@ router.get('/metrics', auth, adminAuth, async (req, res) => {
         COUNT(ar.id) FILTER (WHERE ar.status = 'present') as total_present,
         COUNT(ar.id) FILTER (WHERE ar.status = 'absent') as total_absent,
         COUNT(ar.id) FILTER (WHERE ar.status = 'late') as total_late,
-        AVG(ar.hours_worked) FILTER (WHERE ar.hours_worked > 0) as avg_hours
+        AVG(ar.total_hours) FILTER (WHERE ar.total_hours > 0) as avg_hours
       FROM users u
       LEFT JOIN attendance_records ar ON u.id = ar.user_id AND ${dateFilter}
       WHERE u.is_admin = FALSE
