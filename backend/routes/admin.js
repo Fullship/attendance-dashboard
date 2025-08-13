@@ -2605,16 +2605,23 @@ router.post('/setup-missing-tables', auth, adminAuth, async (req, res) => {
     console.log('✅ Teams table created');
     
     // Insert sample locations
-    await pool.query(`
-      INSERT INTO locations (name, address, timezone)
-      VALUES 
-        ('New York Office', '123 Broadway, New York, NY', 'America/New_York'),
-        ('London Office', '456 Oxford Street, London, UK', 'Europe/London'),
-        ('Tokyo Office', '789 Shibuya, Tokyo, Japan', 'Asia/Tokyo'),
-        ('Dubai Office', '101 Sheikh Zayed Road, Dubai, UAE', 'Asia/Dubai')
-      ON CONFLICT (name) DO NOTHING
+    const locationsResult = await pool.query(`
+      SELECT COUNT(*) as count FROM locations
     `);
-    console.log('✅ Sample locations inserted');
+    
+    if (parseInt(locationsResult.rows[0].count) === 0) {
+      await pool.query(`
+        INSERT INTO locations (name, address, timezone)
+        VALUES 
+          ('New York Office', '123 Broadway, New York, NY', 'America/New_York'),
+          ('London Office', '456 Oxford Street, London, UK', 'Europe/London'),
+          ('Tokyo Office', '789 Shibuya, Tokyo, Japan', 'Asia/Tokyo'),
+          ('Dubai Office', '101 Sheikh Zayed Road, Dubai, UAE', 'Asia/Dubai')
+      `);
+      console.log('✅ Sample locations inserted');
+    } else {
+      console.log('✅ Locations already exist, skipping insertion');
+    }
     
     // Insert sample teams
     const teamsResult = await pool.query(`
