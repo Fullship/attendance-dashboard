@@ -5701,6 +5701,110 @@ router.get('/logs', auth, adminAuth, async (req, res) => {
   }
 });
 
+// Debug endpoint for testing employee creation (no auth required)
+router.post('/debug-create-employee', async (req, res) => {
+  try {
+    const { firstName, lastName, email, password, isAdmin = false } = req.body;
+
+    console.log('Debug create employee request:', { firstName, lastName, email, isAdmin });
+
+    // Validation
+    if (!firstName || !lastName || !email || !password) {
+      return res.status(400).json({
+        message: 'All fields are required',
+        errors: [
+          { field: 'firstName', message: 'First name is required' },
+          { field: 'lastName', message: 'Last name is required' },
+          { field: 'email', message: 'Email is required' },
+          { field: 'password', message: 'Password is required' },
+        ].filter(error => !req.body[error.field]),
+      });
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        message: 'Invalid email format',
+        errors: [{ field: 'email', message: 'Please enter a valid email address' }],
+      });
+    }
+
+    // Password validation
+    if (password.length < 6) {
+      return res.status(400).json({
+        message: 'Password must be at least 6 characters long',
+        errors: [{ field: 'password', message: 'Password must be at least 6 characters long' }],
+      });
+    }
+
+    // Check current table structure first
+    console.log('Checking users table structure...');
+    const tableInfo = await pool.query(`
+      SELECT column_name, data_type, is_nullable, column_default 
+      FROM information_schema.columns 
+      WHERE table_name = 'users' 
+      ORDER BY ordinal_position
+    `);
+    console.log('Users table columns:', tableInfo.rows);
+
+    // Check if user already exists
+    const existingUser = await pool.query('SELECT id FROM users WHERE email = $1', [
+      email.toLowerCase(),
+    ]);
+
+    if (existingUser.rows.length > 0) {
+      return res.status(400).json({
+        message: 'User with this email already exists',
+        errors: [{ field: 'email', message: 'An account with this email already exists' }],
+      });
+    }
+
+    // Hash password
+    const saltRounds = 12;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    console.log('Creating user with data:', {
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      email: email.toLowerCase(),
+      isAdmin,
+      hashedPassword: hashedPassword ? 'Generated' : 'Failed'
+    });
+
+    // Create user
+    const result = await pool.query(
+      `INSERT INTO users (first_name, last_name, email, password, is_admin, created_at, updated_at) 
+       VALUES ($1, $2, $3, $4, $5, NOW(), NOW()) 
+       RETURNING id, first_name, last_name, email, is_admin, created_at`,
+      [firstName.trim(), lastName.trim(), email.toLowerCase(), hashedPassword, isAdmin]
+    );
+
+    const newUser = result.rows[0];
+    console.log('User created successfully:', newUser);
+
+    // Return user data (without password)
+    res.status(201).json({
+      message: 'Employee created successfully',
+      user: {
+        id: newUser.id,
+        firstName: newUser.first_name,
+        lastName: newUser.last_name,
+        email: newUser.email,
+        isAdmin: newUser.is_admin,
+        createdAt: newUser.created_at,
+      },
+    });
+  } catch (error) {
+    console.error('Debug create employee error:', error);
+    res.status(500).json({ 
+      message: 'Server error while creating employee',
+      error: error.message,
+      stack: error.stack
+    });
+  }
+});
+
 console.log('📊 Admin monitoring API endpoints loaded');
 
 module.exports = router;
