@@ -171,6 +171,7 @@ ssl/
 
 # Docker
 .dockerignore
+docker-compose.dev.yml
 
 # Nginx logs
 nginx-access.log
