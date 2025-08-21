@@ -222,6 +222,35 @@ app.post('/ISAPI/AccessControl/AcsEvent', basicAuth, async (req, res) => {
   }
 });
 
+// Handle HTTP Hosts validation (for device configuration validation)
+app.put('/ISAPI/Event/notification/httpHosts/:id', basicAuth, (req, res) => {
+  console.log(`🔧 HTTP Host validation request for ID: ${req.params.id}`);
+  console.log('📦 Headers:', JSON.stringify(req.headers, null, 2));
+  console.log('📄 Body:', JSON.stringify(req.body, null, 2));
+  
+  // Return success for device validation
+  res.status(200).json({
+    responseStatus: "OK",
+    responseStatusStrg: "OK"
+  });
+});
+
+// Handle HTTP Hosts GET requests
+app.get('/ISAPI/Event/notification/httpHosts/:id', basicAuth, (req, res) => {
+  console.log(`🔧 HTTP Host info request for ID: ${req.params.id}`);
+  
+  res.status(200).json({
+    HttpHostNotification: {
+      id: req.params.id,
+      url: `http://isapi-cloud-production.up.railway.app/ISAPI/AccessControl/AcsEvent?format=json`,
+      protocolType: "HTTP",
+      parameterFormatType: "JSON",
+      addressingFormatType: "url",
+      httpAuthenticationMethod: "none"
+    }
+  });
+});
+
 // Handle any other ISAPI endpoints
 app.all('/ISAPI/*', basicAuth, (req, res) => {
   console.log(`📥 ISAPI Request: ${req.method} ${req.path}`);
