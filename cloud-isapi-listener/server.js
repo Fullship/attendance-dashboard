@@ -154,6 +154,74 @@ app.post('/ISAPI/Event/notification', basicAuth, async (req, res) => {
   }
 });
 
+// ISAPI AccessControl Event Search endpoint (for Hikvision AcsEvent queries)
+app.post('/ISAPI/AccessControl/AcsEvent', basicAuth, async (req, res) => {
+  const startTime = Date.now();
+  const searchId = req.body?.AcsEventCond?.searchID || `search_${Date.now()}`;
+
+  try {
+    console.log(`🔍 [${new Date().toISOString()}] AcsEvent query received: ${searchId}`);
+    console.log('📦 Headers:', JSON.stringify(req.headers, null, 2));
+    console.log('📄 Body:', JSON.stringify(req.body, null, 2));
+
+    stats.events.received++;
+    stats.lastEvent = new Date().toISOString();
+
+    // Extract search parameters
+    const searchCond = req.body?.AcsEventCond || {};
+    
+    // Forward search request to local server
+    const forwardResult = await forwardToLocalServer({
+      type: 'acsEvent_search',
+      searchId: searchId,
+      searchCondition: searchCond,
+      metadata: {
+        receivedAt: new Date().toISOString(),
+        sourceIP: req.ip || req.connection.remoteAddress,
+        userAgent: req.headers['user-agent'],
+        cloudProcessed: true
+      }
+    });
+
+    if (forwardResult.success) {
+      stats.events.forwarded++;
+      console.log(`✅ AcsEvent search ${searchId} forwarded successfully`);
+    } else {
+      stats.events.errors++;
+      console.error(`❌ Failed to forward AcsEvent search ${searchId}:`, forwardResult.error);
+    }
+
+    // Return mock response in expected format
+    res.status(200).json({
+      AcsEventSearchResult: {
+        searchID: searchId,
+        responseStatusStrg: "OK",
+        numOfMatches: 0,
+        totalMatches: 0,
+        EventList: {
+          Event: []
+        }
+      }
+    });
+
+  } catch (error) {
+    stats.events.errors++;
+    console.error(`💥 Error processing AcsEvent search ${searchId}:`, error);
+    
+    res.status(200).json({
+      AcsEventSearchResult: {
+        searchID: searchId,
+        responseStatusStrg: "ERROR",
+        numOfMatches: 0,
+        totalMatches: 0,
+        EventList: {
+          Event: []
+        }
+      }
+    });
+  }
+});
+
 // Handle any other ISAPI endpoints
 app.all('/ISAPI/*', basicAuth, (req, res) => {
   console.log(`📥 ISAPI Request: ${req.method} ${req.path}`);
