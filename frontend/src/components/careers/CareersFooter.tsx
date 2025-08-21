@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { Link } from 'react-router-dom';
 import './CareersFooter.css';
 
 const CareersFooter: React.FC = () => {
@@ -57,6 +58,27 @@ const CareersFooter: React.FC = () => {
               <li><a href="mailto:careers@fullship.com">careers@fullship.com</a></li>
               <li><a href="mailto:hello@fullship.com">General Inquiries</a></li>
               <li><a href="/contact">Contact Form</a></li>
+              <li>
+                <Link 
+                  to="/login" 
+                  className="staff-login-link"
+                  style={{ 
+                    color: '#3b82f6', 
+                    fontWeight: '500',
+                    textDecoration: 'none',
+                    borderBottom: '1px solid transparent',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderBottomColor = '#3b82f6';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderBottomColor = 'transparent';
+                  }}
+                >
+                  🔐 Staff Login
+                </Link>
+              </li>
             </ul>
           </div>
         </div>

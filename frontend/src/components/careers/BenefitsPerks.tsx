@@ -3,7 +3,7 @@
  * @description Benefits and perks section with interactive cards
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './BenefitsPerks.css';
 
 interface Benefit {
@@ -11,15 +11,52 @@ interface Benefit {
   title: string;
   description: string;
   icon: string;
-  category: 'health' | 'financial' | 'growth' | 'lifestyle';
-  highlights: string[];
+  category: 'health' | 'financial' | 'growth' | 'lifestyle' | 'general';
+  highlights?: string[];
 }
 
 const BenefitsPerks: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [expandedBenefit, setExpandedBenefit] = useState<string | null>(null);
+  const [benefits, setBenefits] = useState<Benefit[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const benefits: Benefit[] = [
+  useEffect(() => {
+    const fetchBenefits = async () => {
+      try {
+        console.log('🔄 Fetching benefits from admin-managed data...');
+        const response = await fetch('/api/careers/benefits');
+        if (response.ok) {
+          const data = await response.json();
+          console.log('✅ Benefits fetched successfully:', data.benefits);
+          
+          // Transform admin data to component format
+          const transformedBenefits: Benefit[] = data.benefits.map((benefit: any, index: number) => ({
+            id: index.toString(),
+            title: benefit.title,
+            description: benefit.description,
+            icon: benefit.icon || '🎯',
+            category: benefit.category || 'general',
+            highlights: [] // Admin doesn't currently have highlights, could be added later
+          }));
+          
+          setBenefits(transformedBenefits);
+        } else {
+          console.error('❌ Failed to fetch benefits, using fallback data');
+          setBenefits(getFallbackBenefits());
+        }
+      } catch (error) {
+        console.error('❌ Error fetching benefits:', error);
+        setBenefits(getFallbackBenefits());
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBenefits();
+  }, []);
+
+  const getFallbackBenefits = (): Benefit[] => [
     {
       id: '1',
       title: 'Comprehensive Health Coverage',
@@ -75,7 +112,8 @@ const BenefitsPerks: React.FC = () => {
     { id: 'health', label: 'Health & Wellness', icon: '🏥' },
     { id: 'financial', label: 'Financial', icon: '💰' },
     { id: 'growth', label: 'Growth', icon: '📈' },
-    { id: 'lifestyle', label: 'Lifestyle', icon: '🌟' }
+    { id: 'lifestyle', label: 'Lifestyle', icon: '🌟' },
+    { id: 'general', label: 'General', icon: '🎯' }
   ];
 
   const filteredBenefits = activeCategory === 'all' 
@@ -113,8 +151,13 @@ const BenefitsPerks: React.FC = () => {
         </div>
 
         {/* Benefits Grid */}
-        <div className="benefits-grid">
-          {filteredBenefits.map((benefit) => (
+        {loading ? (
+          <div className="loading-state" style={{ textAlign: 'center', padding: '2rem' }}>
+            <p>Loading benefits...</p>
+          </div>
+        ) : (
+          <div className="benefits-grid">
+            {filteredBenefits.map((benefit) => (
             <div 
               key={benefit.id} 
               className={`benefit-card ${expandedBenefit === benefit.id ? 'expanded' : ''}`}
@@ -151,7 +194,7 @@ const BenefitsPerks: React.FC = () => {
                 <div className="benefit-details">
                   <h4>What's Included:</h4>
                   <ul className="highlights-list">
-                    {benefit.highlights.map((highlight, index) => (
+                    {benefit.highlights?.map((highlight, index) => (
                       <li key={index} className="highlight-item">
                         <span className="check-icon" aria-hidden="true">✓</span>
                         {highlight}
@@ -162,7 +205,8 @@ const BenefitsPerks: React.FC = () => {
               )}
             </div>
           ))}
-        </div>
+          </div>
+        )}
 
         {/* Benefits Summary */}
         <div className="benefits-summary">

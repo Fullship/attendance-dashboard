@@ -8,6 +8,7 @@ const rateLimit = require('express-rate-limit');
 const session = require('express-session');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
+const cluster = require('cluster');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 
@@ -31,6 +32,9 @@ const monitoringInstrumentation = require('./middleware/monitoring-instrumentati
 // Import Redis configuration
 const { redis: redisClient, cacheService } = require('./config/redis');
 
+// Import safe JSON middleware to handle UTF-16 encoding issues
+const { safeJsonMiddleware } = require('./middleware/safeJson');
+
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const attendanceRoutes = require('./routes/attendance');
@@ -39,6 +43,10 @@ const enhancedLeaveRoutes = require('./routes/enhanced-leave');
 const adminLeaveRoutes = require('./routes/admin-leave');
 const rolesRoutes = require('./routes/roles');
 const performanceRoutes = require('./routes/performance');
+const careersRoutes = require('./routes/careers');
+const careersContentRoutes = require('./routes/careers-content');
+const careersPublicRoutes = require('./routes/careers-public');
+const attendanceApiRoutes = require('./routes/attendance-api');
 
 // Import database monitoring middleware
 const DatabaseMonitoringAPI = require('./middleware/database-monitoring');
@@ -59,12 +67,16 @@ const io = new Server(httpServer, {
         : [
             'http://localhost:3000',
             'http://localhost:3001',
+            'http://localhost:3002', // Allow backend origin for proxy requests
             'http://localhost:3004',
             'http://localhost:3005',
             'https://my.fullship.net',
           ];
 
-      if (allowedOrigins.indexOf(origin) !== -1) {
+      // Check if this is a proxied request from React dev server
+      const isProxiedRequest = origin === 'http://localhost:3002' && process.env.NODE_ENV === 'development';
+
+      if (allowedOrigins.indexOf(origin) !== -1 || isProxiedRequest) {
         callback(null, true);
       } else {
         callback(new Error('Not allowed by CORS'));
@@ -123,13 +135,18 @@ const corsOptions = {
       : [
           'http://localhost:3000',
           'http://localhost:3001',
+          'http://localhost:3002', // Allow backend origin for proxy requests
           'http://localhost:3004',
           'http://localhost:3005',
           'https://my.fullship.net',
         ];
 
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      console.log(`CORS allowed origin: ${origin}`);
+    // Check if this is a proxied request from React dev server
+    // React dev server proxy sets origin to backend URL but includes forwarded headers
+    const isProxiedRequest = origin === 'http://localhost:3002' && process.env.NODE_ENV === 'development';
+
+    if (allowedOrigins.indexOf(origin) !== -1 || isProxiedRequest) {
+      console.log(`CORS allowed origin: ${origin}${isProxiedRequest ? ' (proxied request)' : ''}`);
       callback(null, true);
     } else {
       console.log(`CORS blocked origin: ${origin}. Allowed: ${allowedOrigins.join(', ')}`);
@@ -180,6 +197,9 @@ if (process.env.NODE_ENV === 'development') {
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Safe JSON middleware to handle UTF-16 encoding issues
+app.use(safeJsonMiddleware());
+
 // Comprehensive monitoring instrumentation
 app.use(monitoringInstrumentation.requestInstrumentation());
 
@@ -191,12 +211,16 @@ app.use((req, res, next) => {
     : [
         'http://localhost:3000',
         'http://localhost:3001',
+        'http://localhost:3002', // Allow backend origin for proxy requests
         'http://localhost:3004',
         'http://localhost:3005',
         'https://my.fullship.net',
       ];
 
-  if (allowedOrigins.includes(origin)) {
+  // Check if this is a proxied request from React dev server
+  const isProxiedRequest = origin === 'http://localhost:3002' && process.env.NODE_ENV === 'development';
+
+  if (allowedOrigins.includes(origin) || isProxiedRequest) {
     res.setHeader('Access-Control-Allow-Origin', origin);
   }
 
@@ -242,6 +266,7 @@ app.get('/api/compression-test', (req, res) => {
   res.json(testData);
 });
 
+
 // Add request logging middleware for debugging
 app.use((req, res, next) => {
   console.log(
@@ -276,6 +301,10 @@ app.use('/api/admin', rolesRoutes); // Mount role routes under admin
 app.use('/api/enhanced-leave', enhancedLeaveRoutes);
 app.use('/api/admin-leave', adminLeaveRoutes);
 app.use('/api/performance', performanceRoutes);
+app.use('/api/admin/careers', careersRoutes); // Admin careers management
+app.use('/api/admin/careers', careersContentRoutes); // Admin careers content management
+app.use('/api/careers', careersPublicRoutes); // Public careers API
+app.use('/api/attendance-api', attendanceApiRoutes); // External attendance API integration
 
 // Setup database monitoring API routes
 dbMonitoring.setupRoutes(app);

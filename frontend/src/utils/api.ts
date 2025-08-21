@@ -23,10 +23,15 @@ import {
   HierarchyLevel,
   SystemSetting,
 } from '../types';
+import { safeJsonObject } from './stringUtils';
 
 // Get API base URL with production fallback
 const getApiBaseUrl = () => {
-  // If we have the environment variable, use it
+  // For development with proxy, use relative URLs
+  if (process.env.NODE_ENV === 'development') {
+    return '/api'; // This will be proxied to localhost:3002
+  }
+  
   if (process.env.REACT_APP_API_URL) {
     return process.env.REACT_APP_API_URL;
   }
@@ -36,7 +41,7 @@ const getApiBaseUrl = () => {
     return 'https://my.fullship.net/api';
   }
   
-  // Default to localhost for development
+  // Fallback for production or other environments
   return 'http://localhost:3002/api';
 };
 
@@ -52,12 +57,18 @@ const api = axios.create({
   },
 });
 
-// Add auth token to requests
+// Add auth token to requests and safe encode data
 api.interceptors.request.use(config => {
   const token = localStorage.getItem('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  
+  // Safely encode request data to prevent UTF-16 issues
+  if (config.data && typeof config.data === 'object') {
+    config.data = safeJsonObject(config.data);
+  }
+  
   return config;
 });
 
@@ -1001,6 +1012,37 @@ export const roleAPI = {
 
   getEmployeeRoles: async (employeeId: number): Promise<{ roles: any[]; hierarchyLevel?: any }> => {
     const response = await api.get(`/admin/employees/${employeeId}/roles`);
+    return response.data;
+  },
+
+  // Careers Management API
+  getCareersAnalytics: async (): Promise<any> => {
+    const response = await api.get('/admin/careers/analytics');
+    return response.data;
+  },
+
+  getJobs: async (filters?: any): Promise<{ jobs: any[]; pagination: any }> => {
+    const response = await api.get('/admin/careers/jobs', { params: filters });
+    return response.data;
+  },
+
+  createJob: async (jobData: any): Promise<{ message: string; job: any }> => {
+    const response = await api.post('/admin/careers/jobs', jobData);
+    return response.data;
+  },
+
+  updateJob: async (jobId: number, jobData: any): Promise<{ message: string; job: any }> => {
+    const response = await api.put(`/admin/careers/jobs/${jobId}`, jobData);
+    return response.data;
+  },
+
+  deleteJob: async (jobId: number): Promise<{ message: string }> => {
+    const response = await api.delete(`/admin/careers/jobs/${jobId}`);
+    return response.data;
+  },
+
+  getJobApplications: async (filters?: any): Promise<{ applications: any[]; pagination: any }> => {
+    const response = await api.get('/admin/careers/applications', { params: filters });
     return response.data;
   },
 };

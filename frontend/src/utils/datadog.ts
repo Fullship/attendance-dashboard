@@ -26,8 +26,13 @@ const DATADOG_CONFIG = {
  * Initialize Datadog RUM (Real User Monitoring)
  */
 export const initializeDatadogRUM = () => {
-  if (!DATADOG_CONFIG.applicationId || !DATADOG_CONFIG.clientToken) {
-    console.warn('Datadog RUM not initialized: missing applicationId or clientToken');
+  // Check for missing or placeholder tokens
+  if (!DATADOG_CONFIG.applicationId || 
+      !DATADOG_CONFIG.clientToken ||
+      DATADOG_CONFIG.applicationId === 'your-app-id' ||
+      DATADOG_CONFIG.clientToken === 'your-client-token' ||
+      isDevelopment) {
+    console.warn('Datadog RUM not initialized: missing/placeholder tokens or development environment');
     return;
   }
 
@@ -88,8 +93,11 @@ export const initializeDatadogRUM = () => {
  * Initialize Datadog Logs
  */
 export const initializeDatadogLogs = () => {
-  if (!DATADOG_CONFIG.clientToken) {
-    console.warn('Datadog Logs not initialized: missing clientToken');
+  // Check for missing or placeholder tokens
+  if (!DATADOG_CONFIG.clientToken ||
+      DATADOG_CONFIG.clientToken === 'your-client-token' ||
+      isDevelopment) {
+    console.warn('Datadog Logs not initialized: missing/placeholder tokens or development environment');
     return;
   }
 

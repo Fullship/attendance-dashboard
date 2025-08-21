@@ -283,7 +283,7 @@ class DatabaseCache {
                    a.first_name as admin_first_name, a.last_name as admin_last_name
             FROM clock_requests cr
             LEFT JOIN users u ON cr.user_id = u.id
-            LEFT JOIN users a ON cr.reviewed_by = a.id
+            LEFT JOIN users a ON cr.admin_id = a.id
             WHERE cr.status = $1
             ORDER BY cr.created_at ASC
             LIMIT $2 OFFSET $3

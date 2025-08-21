@@ -24,6 +24,7 @@ import {
   LocationManagerWithSuspense,
   CareersPageWithSuspense,
 } from '../components/LazyComponents';
+import CareersManagement from '../components/admin/CareersManagement';
 import { ComponentLoadingFallback } from '../components/LazyLoadingFallback';
 import VirtualizedTable, {
   VirtualizedTableProps,
@@ -41,7 +42,6 @@ const AdminDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<
     | 'overview'
     | 'employees'
-    | 'uploads'
     | 'attendance'
     | 'clock-requests'
     | 'leave-requests'
@@ -521,6 +521,10 @@ const AdminDashboard: React.FC = () => {
       const getApiBaseUrl = () => {
         if (process.env.REACT_APP_API_URL) {
           return process.env.REACT_APP_API_URL.replace('/api', '');
+        }
+        // For development with proxy, use relative URLs
+        if (process.env.NODE_ENV === 'development') {
+          return ''; // Empty string for relative URLs with proxy
         }
         if (window.location.hostname === 'my.fullship.net') {
           return 'https://my.fullship.net';
@@ -2405,8 +2409,6 @@ Status Breakdown:
         return renderEmployees();
       case 'attendance':
         return renderAttendanceRecords();
-      case 'uploads':
-        return renderUploads();
       case 'clock-requests':
         return renderClockRequests();
       case 'leave-requests':
@@ -2414,7 +2416,7 @@ Status Breakdown:
       case 'org-chart':
         return <ReactFlowOrganizationalChartWithSuspense />;
       case 'careers':
-        return <CareersPageWithSuspense />;
+        return <CareersManagement />;
       case 'settings':
         return <AdminSettings />;
       case 'monitoring':

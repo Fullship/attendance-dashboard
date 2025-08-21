@@ -4,3 +4,7 @@ export { default as CacheManager } from './CacheManager';
 export { default as ClusterStatus } from './ClusterStatus';
 export { default as LogsViewer } from './LogsViewer';
 export { default as AdminPanel } from './AdminPanel';
+export { default as CareersManagement } from './CareersManagement';
+export { default as JobFormModal } from './JobFormModal';
+export { default as ApplicationsView } from './ApplicationsView';
+export { default as ContentManagement } from './ContentManagement';

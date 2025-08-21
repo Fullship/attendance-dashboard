@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { MagicCard, FadeInStagger } from '../ui';
-import { MetricsCard, ProfilerControl, CacheManager, ClusterStatus, LogsViewer } from './';
+import { MetricsCard, ProfilerControl, CacheManager, ClusterStatus, LogsViewer, CareersManagement } from './';
 
 interface AdminPanelProps {
   className?: string;
 }
 
 const AdminPanel: React.FC<AdminPanelProps> = ({ className = '' }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'metrics' | 'profiler' | 'cache' | 'cluster' | 'logs'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'metrics' | 'profiler' | 'cache' | 'cluster' | 'logs' | 'careers'>('overview');
 
   const tabs = [
     { id: 'overview', label: 'Overview', icon: '📊' },
@@ -15,7 +15,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ className = '' }) => {
     { id: 'profiler', label: 'Profiler', icon: '🔍' },
     { id: 'cache', label: 'Cache', icon: '💾' },
     { id: 'cluster', label: 'Cluster', icon: '🏭' },
-    { id: 'logs', label: 'Logs', icon: '📝' }
+    { id: 'logs', label: 'Logs', icon: '📝' },
+    { id: 'careers', label: 'Careers', icon: '💼' }
   ] as const;
 
   return (
@@ -105,6 +106,19 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ className = '' }) => {
                       </div>
                     </div>
                   </button>
+                  
+                  <button
+                    onClick={() => setActiveTab('careers')}
+                    className="w-full p-3 text-left bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <span className="text-2xl">💼</span>
+                      <div>
+                        <div className="font-medium">Careers Management</div>
+                        <div className="text-sm text-gray-600">Manage jobs, applications & content</div>
+                      </div>
+                    </div>
+                  </button>
                 </div>
               </MagicCard>
             </div>
@@ -154,6 +168,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ className = '' }) => {
             refreshInterval={10000}
             autoRefresh={true}
           />
+        )}
+
+        {activeTab === 'careers' && (
+          <CareersManagement />
         )}
       </FadeInStagger>
     </div>

@@ -3,6 +3,8 @@ import { adminAPI, handleApiError } from '../utils/api';
 import Card from './Card';
 import LoadingSpinner from './LoadingSpinner';
 import toast from 'react-hot-toast';
+import AttendanceDataManagement from './AttendanceDataManagement';
+import DataUploadManagement from './DataUploadManagement';
 
 interface AttendanceSetting {
   id: number;
@@ -63,7 +65,7 @@ interface Team {
 }
 
 const AdminSettings: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'general' | 'holidays' | 'schedules' | 'locations' | 'teams'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'holidays' | 'schedules' | 'locations' | 'teams' | 'data-upload' | 'attendance-api'>('general');
   const [loading, setLoading] = useState(true);
   
   // General settings state
@@ -749,6 +751,8 @@ const AdminSettings: React.FC = () => {
             { id: 'schedules', label: 'Work Schedules' },
             { id: 'locations', label: 'Locations' },
             { id: 'teams', label: 'Teams' },
+            { id: 'data-upload', label: 'Data Upload' },
+            { id: 'attendance-api', label: 'Attendance Data API' },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -772,6 +776,8 @@ const AdminSettings: React.FC = () => {
         {activeTab === 'schedules' && renderWorkSchedules()}
         {activeTab === 'locations' && renderLocations()}
         {activeTab === 'teams' && renderTeams()}
+        {activeTab === 'data-upload' && <DataUploadManagement />}
+        {activeTab === 'attendance-api' && <AttendanceDataManagement />}
       </div>
     </div>
   );

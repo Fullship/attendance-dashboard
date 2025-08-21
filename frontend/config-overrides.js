@@ -154,10 +154,35 @@ const addDevelopmentOptimizations = () => (config, env) => {
     // Better error reporting
     config.devtool = 'eval-source-map';
 
+    // Add dev server proxy configuration
+    config.devServer = {
+      ...config.devServer,
+      setupMiddlewares: (middlewares, devServer) => {
+        console.log('🔧 Setting up API proxy middleware in config-overrides.js');
+        
+        const { createProxyMiddleware } = require('http-proxy-middleware');
+        const apiProxy = createProxyMiddleware('/api', {
+          target: 'http://localhost:3002',
+          changeOrigin: true,
+          onProxyReq: (proxyReq, req) => {
+            console.log(`🔄 Config-Proxy: ${req.method} ${req.url} -> localhost:3002${req.url}`);
+          }
+        });
+        
+        devServer.app.use('/api', apiProxy);
+        console.log('✅ API proxy configured in config-overrides.js');
+        
+        return middlewares;
+      }
+    };
+
     console.log('⚡ Development optimizations applied');
   }
 
   return config;
 };
 
-module.exports = override(addProductionOptimizations(), addDevelopmentOptimizations());
+module.exports = override(
+  addProductionOptimizations(), 
+  addDevelopmentOptimizations()
+);

@@ -6,7 +6,6 @@ import {
   ChevronDownIcon,
   ChevronRightIcon,
   ClockIcon,
-  DocumentIcon,
   CalendarDaysIcon,
   ListBulletIcon,
   BuildingOfficeIcon,
@@ -51,7 +50,6 @@ const Sidebar: React.FC<SidebarProps> = ({
         { id: 'employees', label: 'List', icon: ListBulletIcon },
         { id: 'org-chart', label: 'Organizational Chart', icon: BuildingOfficeIcon },
         { id: 'attendance', label: 'Attendance Records', icon: ClockIcon },
-        { id: 'uploads', label: 'Data Upload', icon: DocumentIcon },
         {
           id: 'clock-requests',
           label: 'Clock Requests',

@@ -142,7 +142,7 @@ router.get('/clock-requests', auth, async (req, res) => {
       `SELECT cr.*, u.first_name, u.last_name, a.first_name as admin_first_name, a.last_name as admin_last_name
        FROM clock_requests cr
        LEFT JOIN users u ON cr.user_id = u.id
-       LEFT JOIN users a ON cr.reviewed_by = a.id
+       LEFT JOIN users a ON cr.admin_id = a.id
        ${whereClause}
        ORDER BY cr.created_at DESC
        LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,

@@ -1,0 +1,1 @@
+Do not run commands in the same terminal where the server was started.

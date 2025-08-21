@@ -3,7 +3,7 @@
  * @description Employee testimonials and video spotlights section
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './EmployeeTestimonials.css';
 
 interface Testimonial {
@@ -14,14 +14,54 @@ interface Testimonial {
   quote: string;
   videoUrl?: string;
   department: string;
-  yearsAtCompany: number;
+  yearsAtCompany?: number;
+  rating?: number;
 }
 
 const EmployeeTestimonials: React.FC = () => {
   const [activeTestimonial, setActiveTestimonial] = useState(0);
   const [videoPlaying, setVideoPlaying] = useState<string | null>(null);
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const testimonials: Testimonial[] = [
+  useEffect(() => {
+    const fetchTestimonials = async () => {
+      try {
+        console.log('🔄 Fetching testimonials from admin-managed data...');
+        const response = await fetch('/api/careers/testimonials');
+        if (response.ok) {
+          const data = await response.json();
+          console.log('✅ Testimonials fetched successfully:', data.testimonials);
+          
+          // Transform admin data to component format
+          const transformedTestimonials: Testimonial[] = data.testimonials.map((testimonial: any, index: number) => ({
+            id: index.toString(),
+            name: testimonial.employee_name,
+            role: testimonial.job_title,
+            photo: testimonial.photo_url || '/images/employees/default.jpg',
+            quote: testimonial.testimonial_text,
+            department: testimonial.department,
+            rating: testimonial.rating,
+            yearsAtCompany: Math.floor(Math.random() * 5) + 1 // Placeholder since not in admin data
+          }));
+          
+          setTestimonials(transformedTestimonials);
+        } else {
+          console.error('❌ Failed to fetch testimonials, using fallback data');
+          setTestimonials(getFallbackTestimonials());
+        }
+      } catch (error) {
+        console.error('❌ Error fetching testimonials:', error);
+        setTestimonials(getFallbackTestimonials());
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTestimonials();
+  }, []);
+
+  const getFallbackTestimonials = (): Testimonial[] => [
     {
       id: '1',
       name: 'Sarah Chen',
@@ -88,8 +128,18 @@ const EmployeeTestimonials: React.FC = () => {
           </p>
         </div>
 
-        {/* Featured Testimonial Carousel */}
-        <div className="featured-testimonial">
+        {loading ? (
+          <div className="loading-state" style={{ textAlign: 'center', padding: '2rem' }}>
+            <p>Loading testimonials...</p>
+          </div>
+        ) : testimonials.length === 0 ? (
+          <div className="no-testimonials" style={{ textAlign: 'center', padding: '2rem' }}>
+            <p>No testimonials available at the moment.</p>
+          </div>
+        ) : (
+          <>
+            {/* Featured Testimonial Carousel */}
+            <div className="featured-testimonial">
           <div className="testimonial-content">
             <div className="testimonial-card">
               <div className="quote-mark" aria-hidden="true">"</div>
@@ -187,6 +237,8 @@ const EmployeeTestimonials: React.FC = () => {
             ))}
           </div>
         </div>
+          </>
+        )}
 
         {/* Video Modal */}
         {videoPlaying && (

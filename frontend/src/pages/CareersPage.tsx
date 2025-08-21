@@ -22,6 +22,7 @@ const CareersPage: React.FC = () => {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [selectedJob, setSelectedJob] = useState<{ title: string; location: string } | null>(null);
 
   // Detect user's color scheme preference
   useEffect(() => {
@@ -37,24 +38,31 @@ const CareersPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    // Fetch jobs data
+    // Fetch real jobs data from admin-managed jobs
     const fetchJobs = async () => {
       try {
-        // In a real app, this would be an API call
-        const response = await fetch('/api/jobs');
+        console.log('🔄 Fetching jobs from public API...');
+        const response = await fetch('/api/careers/jobs');
         if (response.ok) {
-          const jobsData = await response.json();
-          setJobs(jobsData);
+          const data = await response.json();
+          console.log('✅ Jobs fetched successfully:', data.jobs);
+          setJobs(data.jobs || []);
         } else {
+          console.error('❌ Failed to fetch jobs, status:', response.status);
           // Fallback to mock data
           const mockJobs = await import('../data/mockJobs.json');
           setJobs(mockJobs.default);
         }
       } catch (error) {
-        console.error('Error fetching jobs:', error);
+        console.error('❌ Error fetching jobs:', error);
         // Load mock data as fallback
-        const mockJobs = await import('../data/mockJobs.json');
-        setJobs(mockJobs.default);
+        try {
+          const mockJobs = await import('../data/mockJobs.json');
+          setJobs(mockJobs.default);
+        } catch (mockError) {
+          console.error('❌ Failed to load mock data:', mockError);
+          setJobs([]);
+        }
       } finally {
         setLoading(false);
       }
@@ -82,6 +90,28 @@ const CareersPage: React.FC = () => {
       page: 'careers',
       timestamp: new Date().toISOString()
     });
+
+    // Find the selected job and set it for pre-filling the form
+    if (jobId && jobs.length > 0) {
+      const job = jobs.find(j => j.id === jobId || j.id.toString() === jobId);
+      if (job) {
+        setSelectedJob({
+          title: job.title,
+          location: job.location
+        });
+        
+        // Scroll to the application form
+        setTimeout(() => {
+          const applicationForm = document.getElementById('application-form');
+          if (applicationForm) {
+            applicationForm.scrollIntoView({ 
+              behavior: 'smooth', 
+              block: 'start' 
+            });
+          }
+        }, 100);
+      }
+    }
   };
 
   // Structured data for SEO
@@ -144,11 +174,66 @@ const CareersPage: React.FC = () => {
           onApplyClick={handleApplyNowClick}
         />
         
-        <ApplicationForm onSubmit={(data) => {
+        <ApplicationForm 
+          selectedJob={selectedJob}
+          onClearSelection={() => setSelectedJob(null)}
+          onSubmit={async (data) => {
           trackEvent('careers_application_submitted', {
             position: data.position,
             location: data.location
           });
+          
+          // Submit job application through the public API
+          try {
+            console.log('🚀 Submitting job application:', data);
+            
+            // Find the job ID based on the position title
+            const selectedJob = jobs.find(job => 
+              job.title === data.position || 
+              job.title.toLowerCase().includes(data.position.toLowerCase())
+            );
+            
+            if (!selectedJob) {
+              throw new Error('Selected job position not found. Please refresh the page and try again.');
+            }
+            
+            // Split the full name into first and last name
+            const nameParts = data.name.trim().split(' ');
+            const firstName = nameParts[0] || '';
+            const lastName = nameParts.slice(1).join(' ') || '';
+            
+            // Create FormData for file upload
+            const formData = new FormData();
+            formData.append('first_name', firstName);
+            formData.append('last_name', lastName);
+            formData.append('email', data.email);
+            formData.append('location', data.location);
+            formData.append('cover_letter', data.coverLetter);
+            
+            if (data.resume) {
+              formData.append('resume', data.resume);
+            }
+            
+            const response = await fetch(`/api/careers/jobs/${selectedJob.id}/apply`, {
+              method: 'POST',
+              body: formData, // Use FormData for file upload
+            });
+
+            if (!response.ok) {
+              const errorData = await response.json();
+              throw new Error(errorData.message || 'Failed to submit application');
+            }
+
+            const result = await response.json();
+            console.log('✅ Application submitted successfully:', result);
+            
+            // Show success message (handled by ApplicationForm component)
+          } catch (error) {
+            console.error('❌ Failed to submit application:', error);
+            // Handle error - could show error message to user
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            alert(`Failed to submit application: ${errorMessage}`);
+          }
         }} />
         
         <FAQSection />

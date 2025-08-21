@@ -21,6 +21,8 @@ const {
   invalidateClockRequestCache,
   invalidateAllCache,
 } = require('../middleware/cacheInvalidation');
+const AccessControlAPI = require('../services/AccessControlAPI');
+const ISAPIEventListener = require('../services/ISAPIEventListener');
 
 const router = express.Router();
 
@@ -5702,5 +5704,757 @@ router.get('/logs', auth, adminAuth, async (req, res) => {
 });
 
 console.log('📊 Admin monitoring API endpoints loaded');
+
+// ============================================================================
+// EXTERNAL ACCESS CONTROL API INTEGRATION
+// ============================================================================
+
+// Initialize external access control API
+const accessControlAPI = new AccessControlAPI();
+
+// Initialize ISAPI Event Listener for HTTP Listening Mode
+const isapiEventListener = new ISAPIEventListener();
+
+// Configure external API credentials
+router.post('/external-api/credentials', auth, adminAuth, async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    
+    if (!username || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Username and password are required'
+      });
+    }
+    
+    // Update API credentials
+    accessControlAPI.updateCredentials({ username, password });
+    
+    console.log(`🔐 External API credentials configured for user: ${username}`);
+    
+    res.json({
+      success: true,
+      message: 'External API credentials configured successfully',
+      username: username
+    });
+    
+  } catch (error) {
+    console.error('❌ Error configuring external API credentials:', error);
+    
+    res.status(500).json({
+      success: false,
+      message: 'Failed to configure external API credentials',
+      error: error.message
+    });
+  }
+});
+
+// Get external API credentials status
+router.get('/external-api/credentials', auth, adminAuth, async (req, res) => {
+  try {
+    const status = accessControlAPI.getStatus();
+    
+    res.json({
+      success: true,
+      data: {
+        hasCredentials: status.hasCredentials,
+        username: status.username,
+        baseURL: status.baseURL
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Error getting external API credentials status:', error);
+    
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get external API credentials status',
+      error: error.message
+    });
+  }
+});
+
+// Clear external API credentials
+router.delete('/external-api/credentials', auth, adminAuth, async (req, res) => {
+  try {
+    accessControlAPI.updateCredentials(null);
+    
+    console.log('🔓 External API credentials cleared');
+    
+    res.json({
+      success: true,
+      message: 'External API credentials cleared successfully'
+    });
+    
+  } catch (error) {
+    console.error('❌ Error clearing external API credentials:', error);
+    
+    res.status(500).json({
+      success: false,
+      message: 'Failed to clear external API credentials',
+      error: error.message
+    });
+  }
+});
+
+// Test external API connection
+router.get('/external-api/test', auth, adminAuth, async (req, res) => {
+  try {
+    console.log('🧪 Testing external access control API connection...');
+    
+    const testResult = await accessControlAPI.testConnection();
+    
+    res.json({
+      success: true,
+      message: 'External API test completed',
+      result: testResult,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('❌ External API test failed:', error);
+    res.status(500).json({
+      success: false,
+      message: 'External API test failed',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Get external API status
+router.get('/external-api/status', auth, adminAuth, async (req, res) => {
+  try {
+    const status = accessControlAPI.getStatus();
+    
+    res.json({
+      success: true,
+      status,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('❌ Failed to get external API status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get external API status',
+      error: error.message
+    });
+  }
+});
+
+// Fetch external access events for a specific date
+router.post('/external-api/fetch-events', auth, adminAuth, async (req, res) => {
+  try {
+    const { 
+      date, 
+      startDate, 
+      endDate, 
+      timezone = '+03:00',
+      maxResults = 240,
+      searchResultPosition = 0 
+    } = req.body;
+
+    let result;
+
+    if (date) {
+      // Fetch events for a single date
+      console.log(`📅 Fetching external events for date: ${date}`);
+      result = await accessControlAPI.fetchDayEvents(date, timezone, {
+        maxResults,
+        searchResultPosition
+      });
+    } else if (startDate && endDate) {
+      // Fetch events for a date range
+      console.log(`📅 Fetching external events from ${startDate} to ${endDate}`);
+      result = await accessControlAPI.fetchDateRangeEvents(startDate, endDate, timezone, {
+        maxResults,
+        searchResultPosition
+      });
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: 'Either "date" or both "startDate" and "endDate" are required'
+      });
+    }
+
+    if (result.success) {
+      // Transform events to internal format
+      const transformedEvents = accessControlAPI.transformEvents(result.events);
+      
+      res.json({
+        success: true,
+        message: 'External events fetched successfully',
+        data: {
+          ...result,
+          transformedEvents,
+          summary: {
+            totalEvents: result.events.length,
+            transformedCount: transformedEvents.length,
+            searchID: result.searchID
+          }
+        },
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch external events',
+        error: result.error,
+        timestamp: new Date().toISOString()
+      });
+    }
+  } catch (error) {
+    console.error('❌ Failed to fetch external events:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch external events',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Sync external events to database
+router.post('/external-api/sync-events', auth, adminAuth, async (req, res) => {
+  try {
+    const { 
+      date, 
+      startDate, 
+      endDate, 
+      timezone = '+03:00',
+      maxResults = 240,
+      dryRun = false 
+    } = req.body;
+
+    console.log(`🔄 Starting external API sync - Dry Run: ${dryRun}`);
+
+    // Fetch events from external API
+    let fetchResult;
+    if (date) {
+      fetchResult = await accessControlAPI.fetchDayEvents(date, timezone, { maxResults });
+    } else if (startDate && endDate) {
+      fetchResult = await accessControlAPI.fetchDateRangeEvents(startDate, endDate, timezone, { maxResults });
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: 'Either "date" or both "startDate" and "endDate" are required'
+      });
+    }
+
+    if (!fetchResult.success) {
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch events from external API',
+        error: fetchResult.error
+      });
+    }
+
+    const transformedEvents = accessControlAPI.transformEvents(fetchResult.events);
+    
+    let syncResults = {
+      processed: 0,
+      inserted: 0,
+      updated: 0,
+      errors: 0,
+      details: []
+    };
+
+    if (!dryRun && transformedEvents.length > 0) {
+      // Process each event and sync to database
+      for (const event of transformedEvents) {
+        try {
+          syncResults.processed++;
+          
+          // Here you would implement the actual database sync logic
+          // For now, we'll just log the events
+          console.log(`🔄 Processing event:`, {
+            employeeId: event.employeeId,
+            cardNumber: event.cardNumber,
+            timestamp: event.timestamp,
+            location: event.location
+          });
+          
+          // TODO: Implement actual database insertion/update logic
+          // This would involve:
+          // 1. Finding/creating user by employee ID or card number
+          // 2. Parsing event type (in/out)
+          // 3. Creating attendance records
+          // 4. Handling conflicts and duplicates
+          
+          syncResults.inserted++;
+          syncResults.details.push({
+            status: 'success',
+            event: event,
+            action: 'inserted'
+          });
+          
+        } catch (eventError) {
+          console.error(`❌ Failed to process event:`, eventError);
+          syncResults.errors++;
+          syncResults.details.push({
+            status: 'error',
+            event: event,
+            error: eventError.message
+          });
+        }
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `External API sync completed${dryRun ? ' (dry run)' : ''}`,
+      data: {
+        fetchResult: {
+          totalEvents: fetchResult.events.length,
+          searchID: fetchResult.searchID
+        },
+        syncResults,
+        dryRun
+      },
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('❌ External API sync failed:', error);
+    res.status(500).json({
+      success: false,
+      message: 'External API sync failed',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Get external API synchronization history (placeholder)
+router.get('/external-api/sync-history', auth, adminAuth, async (req, res) => {
+  try {
+    // TODO: Implement sync history from database
+    const mockHistory = [
+      {
+        id: 1,
+        date: '2025-08-20',
+        status: 'success',
+        eventsProcessed: 45,
+        eventsInserted: 42,
+        eventsUpdated: 3,
+        errors: 0,
+        startTime: '2025-08-20T08:00:00Z',
+        endTime: '2025-08-20T08:02:30Z',
+        duration: 150000
+      }
+    ];
+
+    res.json({
+      success: true,
+      data: mockHistory,
+      pagination: {
+        page: 1,
+        limit: 20,
+        total: mockHistory.length,
+        pages: 1
+      },
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('❌ Failed to get sync history:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get sync history',
+      error: error.message
+    });
+  }
+});
+
+console.log('🔗 External Access Control API endpoints loaded');
+
+// ============================================================================
+// ISAPI EVENT LISTENER (HTTP LISTENING MODE) ROUTES
+// ============================================================================
+
+// Start ISAPI Event Listener
+router.post('/isapi-listener/start', auth, adminAuth, async (req, res) => {
+  try {
+    const { port = 8080, username, password } = req.body;
+    
+    // Update credentials if provided
+    if (username && password) {
+      isapiEventListener.updateCredentials({ username, password });
+    }
+    
+    const result = await isapiEventListener.startListening(port);
+    
+    console.log(`📡 ISAPI Event Listener started on port ${port}`);
+    
+    res.json({
+      success: true,
+      message: 'ISAPI Event Listener started successfully',
+      data: result,
+      instructions: [
+        'Configure your device to send events to this server:',
+        `Device HTTP Host: http://YOUR_SERVER_IP:${port}/ISAPI/Event/notification`,
+        'Set device to HTTP POST method',
+        'Enable event notifications on your device'
+      ]
+    });
+  } catch (error) {
+    console.error('❌ Failed to start ISAPI listener:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to start ISAPI Event Listener',
+      error: error.message
+    });
+  }
+});
+
+// Stop ISAPI Event Listener
+router.post('/isapi-listener/stop', auth, adminAuth, async (req, res) => {
+  try {
+    const result = await isapiEventListener.stopListening();
+    
+    console.log('🛑 ISAPI Event Listener stopped');
+    
+    res.json({
+      success: true,
+      message: 'ISAPI Event Listener stopped successfully',
+      data: result
+    });
+  } catch (error) {
+    console.error('❌ Failed to stop ISAPI listener:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to stop ISAPI Event Listener',
+      error: error.message
+    });
+  }
+});
+
+// Get ISAPI Event Listener status
+router.get('/isapi-listener/status', auth, adminAuth, async (req, res) => {
+  try {
+    const status = isapiEventListener.getStatus();
+    
+    res.json({
+      success: true,
+      data: status
+    });
+  } catch (error) {
+    console.error('❌ Failed to get ISAPI listener status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get ISAPI Event Listener status',
+      error: error.message
+    });
+  }
+});
+
+// Update ISAPI listener credentials
+router.post('/isapi-listener/credentials', auth, adminAuth, async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    
+    if (!username || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Username and password are required'
+      });
+    }
+    
+    isapiEventListener.updateCredentials({ username, password });
+    
+    console.log(`🔐 ISAPI listener credentials updated for user: ${username}`);
+    
+    res.json({
+      success: true,
+      message: 'ISAPI listener credentials updated successfully'
+    });
+  } catch (error) {
+    console.error('❌ Failed to update ISAPI listener credentials:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update credentials',
+      error: error.message
+    });
+  }
+});
+
+// Reset event counters
+router.post('/isapi-listener/reset-counters', auth, adminAuth, async (req, res) => {
+  try {
+    isapiEventListener.resetCounters();
+    
+    console.log('🔄 ISAPI listener event counters reset');
+    
+    res.json({
+      success: true,
+      message: 'Event counters reset successfully'
+    });
+  } catch (error) {
+    console.error('❌ Failed to reset ISAPI listener counters:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to reset counters',
+      error: error.message
+    });
+  }
+});
+
+// Get external events from database
+router.get('/isapi-listener/events', auth, adminAuth, async (req, res) => {
+  try {
+    const { 
+      page = 1, 
+      limit = 20, 
+      startDate, 
+      endDate, 
+      eventType,
+      cardNumber,
+      employeeId 
+    } = req.query;
+    
+    const pageInt = Math.max(1, parseInt(page) || 1);
+    const limitInt = Math.max(1, Math.min(100, parseInt(limit) || 20));
+    const offset = (pageInt - 1) * limitInt;
+    
+    let whereConditions = [];
+    let params = [];
+    let paramCount = 0;
+    
+    if (startDate) {
+      paramCount++;
+      whereConditions.push(`event_time >= $${paramCount}`);
+      params.push(new Date(startDate));
+    }
+    
+    if (endDate) {
+      paramCount++;
+      whereConditions.push(`event_time <= $${paramCount}`);
+      params.push(new Date(endDate));
+    }
+    
+    if (eventType) {
+      paramCount++;
+      whereConditions.push(`mapped_event_type = $${paramCount}`);
+      params.push(eventType);
+    }
+    
+    if (cardNumber) {
+      paramCount++;
+      whereConditions.push(`card_number = $${paramCount}`);
+      params.push(cardNumber);
+    }
+    
+    if (employeeId) {
+      paramCount++;
+      whereConditions.push(`employee_id = $${paramCount}`);
+      params.push(employeeId);
+    }
+    
+    const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+    
+    // Get total count
+    const countQuery = `SELECT COUNT(*) FROM external_events ${whereClause}`;
+    const countResult = await pool.query(countQuery, params);
+    const total = parseInt(countResult.rows[0].count);
+    
+    // Get events
+    const eventsQuery = `
+      SELECT * FROM external_events 
+      ${whereClause}
+      ORDER BY event_time DESC, id DESC
+      LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}
+    `;
+    params.push(limitInt, offset);
+    
+    const eventsResult = await pool.query(eventsQuery, params);
+    
+    res.json({
+      success: true,
+      data: {
+        events: eventsResult.rows,
+        pagination: {
+          page: pageInt,
+          limit: limitInt,
+          total,
+          pages: Math.ceil(total / limitInt)
+        }
+      }
+    });
+  } catch (error) {
+    console.error('❌ Failed to get external events:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get external events',
+      error: error.message
+    });
+  }
+});
+
+console.log('📡 ISAPI Event Listener endpoints loaded');
+
+// ============================================================================
+// CLOUD WEBHOOK ENDPOINT (for receiving events from cloud ISAPI listener)
+// ============================================================================
+
+// Cloud webhook endpoint to receive events from cloud ISAPI listener
+router.post('/external-events/cloud-webhook', async (req, res) => {
+  try {
+    const { event, source, timestamp } = req.body;
+    
+    if (!event) {
+      return res.status(400).json({
+        success: false,
+        message: 'Event data required'
+      });
+    }
+
+    console.log(`☁️  Cloud event received from ${source}:`, event.eventId);
+    console.log('📄 Event data:', JSON.stringify(event, null, 2));
+
+    // Process the event using the same logic as ISAPI listener
+    const client = await pool.connect();
+    
+    try {
+      // Map event codes
+      const eventTypeMapping = {
+        '75001': 'card_swipe_in',
+        '75002': 'card_swipe_out', 
+        '75003': 'card_invalid',
+        '75004': 'door_open',
+        '75005': 'door_close',
+      };
+
+      const mappedEventType = eventTypeMapping[event.eventType] || event.eventType;
+
+      // Insert event into external_events table
+      const insertQuery = `
+        INSERT INTO external_events (
+          external_event_id,
+          event_type,
+          sub_event_type,
+          event_time,
+          card_number,
+          employee_id,
+          door_id,
+          door_name,
+          device_id,
+          device_name,
+          device_ip,
+          mapped_event_type,
+          raw_data,
+          processed_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW())
+        ON CONFLICT (external_event_id) DO NOTHING
+        RETURNING id;
+      `;
+
+      const values = [
+        event.eventId,
+        event.eventType,
+        event.subEventType,
+        event.eventTime,
+        event.cardNumber,
+        event.employeeId,
+        event.doorId,
+        event.doorName,
+        event.deviceId,
+        event.deviceName,
+        event.deviceIP,
+        mappedEventType,
+        JSON.stringify({
+          ...event.rawData,
+          cloudMetadata: event.metadata,
+          source: 'cloud-isapi-listener'
+        }),
+      ];
+
+      const result = await client.query(insertQuery, values);
+      
+      if (result.rows.length > 0) {
+        console.log(`✅ Cloud event stored with ID: ${result.rows[0].id}`);
+        
+        // Try to match with existing employee and create attendance record
+        await tryCreateAttendanceRecordFromCloud(client, event, mappedEventType);
+        
+        res.json({
+          success: true,
+          message: 'Event processed successfully',
+          eventId: event.eventId,
+          databaseId: result.rows[0].id,
+          timestamp: new Date().toISOString()
+        });
+      } else {
+        console.log('ℹ️ Cloud event already exists in database');
+        res.json({
+          success: true,
+          message: 'Event already processed',
+          eventId: event.eventId,
+          timestamp: new Date().toISOString()
+        });
+      }
+
+    } finally {
+      client.release();
+    }
+
+  } catch (error) {
+    console.error('❌ Error processing cloud webhook:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error processing event',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Helper function for cloud events
+async function tryCreateAttendanceRecordFromCloud(client, eventData, mappedEventType) {
+  try {
+    // Try to find employee by card number or employee ID
+    let employee = null;
+    
+    if (eventData.cardNumber) {
+      const cardQuery = 'SELECT * FROM users WHERE card_number = $1 LIMIT 1';
+      const cardResult = await client.query(cardQuery, [eventData.cardNumber]);
+      employee = cardResult.rows[0];
+    }
+
+    if (!employee && eventData.employeeId) {
+      const empQuery = 'SELECT * FROM users WHERE employee_id = $1 LIMIT 1';
+      const empResult = await client.query(empQuery, [eventData.employeeId]);
+      employee = empResult.rows[0];
+    }
+
+    if (employee && ['card_swipe_in', 'card_swipe_out'].includes(mappedEventType)) {
+      // Create attendance record
+      const attendanceQuery = `
+        INSERT INTO attendance_records (
+          user_id,
+          clock_in_time,
+          clock_out_time,
+          external_event_id,
+          created_at
+        ) VALUES ($1, $2, $3, $4, NOW())
+        ON CONFLICT DO NOTHING;
+      `;
+
+      const clockIn = mappedEventType === 'card_swipe_in' ? eventData.eventTime : null;
+      const clockOut = mappedEventType === 'card_swipe_out' ? eventData.eventTime : null;
+
+      await client.query(attendanceQuery, [
+        employee.id,
+        clockIn,
+        clockOut,
+        eventData.eventId
+      ]);
+
+      console.log(`📝 Attendance record created for employee: ${employee.first_name} ${employee.last_name} (from cloud)`);
+    }
+
+  } catch (error) {
+    console.error('❌ Error creating attendance record from cloud event:', error);
+  }
+}
+
+console.log('☁️  Cloud webhook endpoint loaded');
 
 module.exports = router;

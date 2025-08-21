@@ -193,15 +193,13 @@ const AppContent: React.FC = () => {
               }
             />
 
-            {/* Careers Page - Can be accessed by both admin and employees */}
+            {/* Public Careers Page - Accessible without authentication */}
             <Route
               path="/careers"
               element={
-                <ProtectedRoute>
-                  <ReactPerformanceProfiler id="CareersPage" threshold={200}>
-                    <CareersPageWithSuspense />
-                  </ReactPerformanceProfiler>
-                </ProtectedRoute>
+                <ReactPerformanceProfiler id="CareersPage" threshold={200}>
+                  <CareersPageWithSuspense />
+                </ReactPerformanceProfiler>
               }
             />
 

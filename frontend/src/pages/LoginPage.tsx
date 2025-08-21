@@ -128,6 +128,19 @@ const LoginPage: React.FC = () => {
             <p>Employee: john.doe@company.com / admin123</p>
           </div>
         </div>
+
+        {/* Join us button for public careers page */}
+        <div className="text-center border-t border-gray-200 dark:border-gray-700 pt-6">
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+            Looking for career opportunities?
+          </p>
+          <Link
+            to="/careers"
+            className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            🚀 Join Us - Explore Careers
+          </Link>
+        </div>
       </div>
     </div>
   );

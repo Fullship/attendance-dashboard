@@ -17,9 +17,14 @@ interface ApplicationFormData {
 
 interface ApplicationFormProps {
   onSubmit: (data: ApplicationFormData) => void;
+  selectedJob?: {
+    title: string;
+    location: string;
+  } | null;
+  onClearSelection?: () => void;
 }
 
-const ApplicationForm: React.FC<ApplicationFormProps> = ({ onSubmit }) => {
+const ApplicationForm: React.FC<ApplicationFormProps> = ({ onSubmit, selectedJob, onClearSelection }) => {
   const [formData, setFormData] = useState<ApplicationFormData>({
     name: '',
     email: '',
@@ -30,6 +35,17 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({ onSubmit }) => {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
+
+  // Pre-fill form when a job is selected
+  React.useEffect(() => {
+    if (selectedJob) {
+      setFormData(prev => ({
+        ...prev,
+        position: selectedJob.title,
+        location: selectedJob.location
+      }));
+    }
+  }, [selectedJob]);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -105,6 +121,46 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({ onSubmit }) => {
       <div className="container">
         <div className="form-header">
           <h2 className="section-title">Apply Now</h2>
+          {selectedJob ? (
+            <div className="selected-job-info" style={{
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              color: 'white',
+              padding: '12px 16px',
+              borderRadius: '8px',
+              marginBottom: '16px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <p style={{ margin: '0', fontSize: '14px', fontWeight: '500' }}>
+                🎯 Applying for: <strong>{selectedJob.title}</strong> in {selectedJob.location}
+              </p>
+              {onClearSelection && (
+                <button
+                  type="button"
+                  onClick={onClearSelection}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.2)',
+                    border: 'none',
+                    color: 'white',
+                    padding: '4px 8px',
+                    borderRadius: '4px',
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                    transition: 'background 0.2s'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+                  }}
+                >
+                  ✕ Change Position
+                </button>
+              )}
+            </div>
+          ) : null}
           <p className="section-description">
             Ready to join our team? Submit your application and let's start the conversation.
           </p>

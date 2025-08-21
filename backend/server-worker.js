@@ -14,7 +14,20 @@ const { Server } = require('socket.io');
 const path = require('path');
 const cluster = require('cluster');
 
-require('dotenv').config({ path: path.join(__dirname, '.env') });
+// Load environment configuration - prioritize .env.local for development
+const fs = require('fs');
+const envLocalPath = path.join(__dirname, '..', '.env.local');
+const envPath = path.join(__dirname, '.env');
+
+if (fs.existsSync(envLocalPath)) {
+  console.log('📋 Loading .env.local for development');
+  require('dotenv').config({ path: envLocalPath });
+} else if (fs.existsSync(envPath)) {
+  console.log('📋 Loading .env for production');
+  require('dotenv').config({ path: envPath });
+} else {
+  console.log('⚠️  No .env file found, using system environment variables');
+}
 
 // Import Redis configuration
 const { redis: redisClient, cacheService } = require('./config/redis');
@@ -27,6 +40,9 @@ const enhancedLeaveRoutes = require('./routes/enhanced-leave');
 const adminLeaveRoutes = require('./routes/admin-leave');
 const rolesRoutes = require('./routes/roles');
 const performanceRoutes = require('./routes/performance');
+const careersRoutes = require('./routes/careers');
+const careersContentRoutes = require('./routes/careers-content');
+const careersPublicRoutes = require('./routes/careers-public');
 
 // Import database monitoring middleware
 const DatabaseMonitoringAPI = require('./middleware/database-monitoring');
@@ -119,21 +135,32 @@ global.memoryMonitoring = true;
 app.use(
   cors({
     origin: function (origin, callback) {
-      if (!origin) return callback(null, true);
+      console.log('🔍 CORS check - Origin:', origin);
+      
+      if (!origin) {
+        console.log('✅ CORS: No origin header, allowing request');
+        return callback(null, true);
+      }
 
       const allowedOrigins = process.env.FRONTEND_URL
         ? process.env.FRONTEND_URL.split(',')
         : [
             'http://localhost:3000',
             'http://localhost:3001',
+            'http://localhost:3002', // Added temporarily for debugging
             'http://localhost:3004',
             'http://localhost:3005',
             'https://my.fullship.net',
           ];
 
+      console.log('🔍 CORS allowed origins:', allowedOrigins);
+      console.log('🔍 CORS origin check:', origin, 'in', allowedOrigins, '=', allowedOrigins.indexOf(origin));
+
       if (allowedOrigins.indexOf(origin) !== -1) {
+        console.log('✅ CORS: Origin allowed');
         callback(null, true);
       } else {
+        console.log('❌ CORS: Origin not allowed');
         callback(new Error('Not allowed by CORS'));
       }
     },
@@ -147,10 +174,17 @@ app.use(
       'x-datadog-parent-id', 
       'x-datadog-sampling-priority',
       'x-datadog-trace-id',
+      'x-datadog-span-id',
+      'x-datadog-resource',
+      'x-datadog-service',
+      'x-datadog-version',
       'x-requested-with',
       'user-agent',
       'cache-control',
-      'pragma'
+      'pragma',
+      'origin',
+      'x-forwarded-for',
+      'x-real-ip'
     ],
   })
 );
@@ -324,6 +358,9 @@ app.use('/api/admin', rolesRoutes); // Mount role routes under admin (consistent
 app.use('/api/enhanced-leave', enhancedLeaveRoutes);
 app.use('/api/admin-leave', adminLeaveRoutes);
 app.use('/api/performance', performanceRoutes);
+app.use('/api/admin/careers', careersRoutes);
+app.use('/api/admin/careers-content', careersContentRoutes);
+app.use('/api/careers', careersPublicRoutes);
 
 // Build info endpoint for cache busting
 app.get('/api/build-info', (req, res) => {
@@ -366,31 +403,40 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Serve static files from React build (if frontend build exists)
-const frontendBuildPath = path.join(__dirname, '../frontend/build');
-app.use(express.static(frontendBuildPath));
+// Serve static files from React build (only in production)
+if (process.env.NODE_ENV === 'production') {
+  const frontendBuildPath = path.join(__dirname, '../frontend/build');
+  app.use(express.static(frontendBuildPath));
 
-// Handle React routing (SPA fallback) - must be before 404 handler
-app.get('*', (req, res, next) => {
-  // Skip API routes and other backend endpoints
-  if (req.path.startsWith('/api/') || 
-      req.path.startsWith('/health') || 
-      req.path.startsWith('/socket.io/')) {
-    return next();
-  }
-  
-  // Try to serve the React app
-  const indexPath = path.join(frontendBuildPath, 'index.html');
-  res.sendFile(indexPath, (err) => {
-    if (err) {
-      // If index.html doesn't exist, fall through to 404 handler
-      next();
+  // Handle React routing (SPA fallback) - only in production
+  app.get('*', (req, res, next) => {
+    console.log('🔍 SPA handler checking:', req.method, req.path);
+    
+    // Skip API routes and other backend endpoints
+    if (req.path.startsWith('/api/') || 
+        req.path.startsWith('/health') || 
+        req.path.startsWith('/socket.io/')) {
+      console.log('✅ Skipping API route:', req.path);
+      return next();
     }
+    
+    console.log('🌐 Serving SPA for:', req.path);
+    // Try to serve the React app
+    const indexPath = path.join(frontendBuildPath, 'index.html');
+    res.sendFile(indexPath, (err) => {
+      if (err) {
+        // If index.html doesn't exist, fall through to 404 handler
+        next();
+      }
+    });
   });
-});
+} else {
+  console.log('🔧 Development mode: SPA serving disabled, React dev server will handle frontend routes');
+}
 
 // 404 handler
 app.use('*', (req, res) => {
+  console.log('❌ 404 handler hit:', req.method, req.path);
   res.status(404).json({
     message: 'Route not found',
     worker: WORKER_ID,
