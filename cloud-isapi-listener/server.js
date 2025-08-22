@@ -251,16 +251,56 @@ app.get('/ISAPI/Event/notification/httpHosts/:id', basicAuth, (req, res) => {
   });
 });
 
+// Handle ISUP configuration validation
+app.all('/ISAPI/System/Network/isup/:id', basicAuth, (req, res) => {
+  console.log(`🔧 ISUP validation request for ID: ${req.params.id}`);
+  console.log('📦 Headers:', JSON.stringify(req.headers, null, 2));
+  console.log('📄 Body:', JSON.stringify(req.body, null, 2));
+  
+  res.status(200).json({
+    responseStatus: "OK",
+    responseStatusStrg: "OK",
+    IsupNotification: {
+      id: req.params.id,
+      enabled: true,
+      url: `http://isapi-cloud-production.up.railway.app/ISAPI/AccessControl/AcsEvent?format=json`,
+      protocolType: "HTTP"
+    }
+  });
+});
+
+// Handle ISUP status checks
+app.get('/ISAPI/System/Network/isup', basicAuth, (req, res) => {
+  console.log('🔧 ISUP status check');
+  
+  res.status(200).json({
+    IsupNotificationList: {
+      IsupNotification: [{
+        id: "1",
+        enabled: true,
+        url: `http://isapi-cloud-production.up.railway.app/ISAPI/AccessControl/AcsEvent?format=json`,
+        protocolType: "HTTP"
+      }]
+    }
+  });
+});
+
 // Handle any other ISAPI endpoints
 app.all('/ISAPI/*', basicAuth, (req, res) => {
   console.log(`📥 ISAPI Request: ${req.method} ${req.path}`);
   console.log('📦 Headers:', req.headers);
+  console.log('📄 Query:', req.query);
   
   if (req.body) {
     console.log('📄 Body:', req.body);
   }
   
-  res.status(200).json({ status: 'acknowledged' });
+  // Return generic success response for any ISAPI endpoint
+  res.status(200).json({ 
+    responseStatus: "OK",
+    responseStatusStrg: "OK",
+    status: 'acknowledged' 
+  });
 });
 
 // Statistics endpoint
